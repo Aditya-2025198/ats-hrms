@@ -43,6 +43,7 @@ const CandidatesPage = () => {
         >
           Add New Candidate
         </Link>
+        {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
         <a
           href="/api/candidates/export"
           className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"

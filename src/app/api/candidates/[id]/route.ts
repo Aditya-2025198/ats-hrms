@@ -13,14 +13,15 @@ export async function POST(
     const email = data.get("email") as string;
     const status = data.get("status") as string;
 
-    const _updatedCandidate = await prisma.candidate.update({
-      where: { id: Number(params.id) },
-      data: {
-        name,
-        email,
-        status,
-      },
-    });
+return await prisma.candidate.update({
+  where: { id: Number(params.id) },
+  data: {
+    name,
+    email,
+    status,
+  },
+});
+
 
     // ✅ Use absolute URL for redirection
     return NextResponse.redirect(new URL("/dashboard/candidates", req.url));

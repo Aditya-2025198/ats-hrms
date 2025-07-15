@@ -34,10 +34,11 @@ export async function GET() {
       },
     });
   } catch (error) {
-    console.error("Export Error:", error);
-    return NextResponse.json(
-      { error: "Failed to generate Excel file" },
-      { status: 500 }
-    );
-  }
+  console.error("Export Error:", error instanceof Error ? error.message : error);
+  return new NextResponse(
+    JSON.stringify({ error: "Failed to generate Excel file" }),
+    { status: 500, headers: { "Content-Type": "application/json" } }
+  );
+}
+
 }
