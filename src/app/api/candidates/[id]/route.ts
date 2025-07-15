@@ -13,7 +13,7 @@ export async function POST(
     const email = data.get("email") as string;
     const status = data.get("status") as string;
 
-    const updatedCandidate = await prisma.candidate.update({
+    const _updatedCandidate = await prisma.candidate.update({
       where: { id: Number(params.id) },
       data: {
         name,
