@@ -1,0 +1,23 @@
+[
+  {
+    "id": 1,
+    "name": "Alice Johnson",
+    "email": "alice@example.com",
+    "position": "Frontend Developer",
+    "status": "Applied"
+  },
+  {
+    "id": 2,
+    "name": "Bob Smith",
+    "email": "bob@example.com",
+    "position": "Backend Developer",
+    "status": "Interviewed"
+  },
+  {
+    "id": 3,
+    "name": "Charlie Lee",
+    "email": "charlie@example.com",
+    "position": "UI/UX Designer",
+    "status": "Hired"
+  }
+]

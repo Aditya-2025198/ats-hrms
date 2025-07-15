@@ -1,0 +1,27 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Candidate {
+  id        Int      @id @default(autoincrement())
+  name      String
+  email     String   @unique
+  position  String
+  status    String   // Could be enum in future
+  createdAt DateTime @default(now())
+}
+
+model Employee {
+  id         Int      @id @default(autoincrement())
+  name       String
+  email      String   @unique
+  department String
+  role       String
+  status     String
+  createdAt  DateTime @default(now())
+}

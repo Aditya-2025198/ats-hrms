@@ -1,0 +1,26 @@
+[
+  {
+    "id": 1,
+    "name": "Priya Sharma",
+    "email": "priya.sharma@example.com",
+    "department": "Engineering",
+    "role": "Frontend Developer",
+    "status": "Active"
+  },
+  {
+    "id": 2,
+    "name": "Rahul Mehta",
+    "email": "rahul.mehta@example.com",
+    "department": "Human Resources",
+    "role": "HR Manager",
+    "status": "Inactive"
+  },
+  {
+    "id": 3,
+    "name": "Sneha Verma",
+    "email": "sneha.verma@example.com",
+    "department": "Product",
+    "role": "Product Designer",
+    "status": "Active"
+  }
+]
