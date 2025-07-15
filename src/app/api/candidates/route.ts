@@ -8,6 +8,7 @@ export async function GET() {
     const candidates = await prisma.candidate.findMany();
     return NextResponse.json(candidates);
   } catch (error) {
+    console.error("Error fetching candidates:", error); // ✅ added console
     return NextResponse.json({ error: "Failed to fetch candidates" }, { status: 500 });
   }
 }
@@ -15,7 +16,6 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-
     const { name, email, status, position } = body;
 
     if (!name || !email || !status || !position) {
@@ -33,10 +33,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json(newCandidate, { status: 201 });
   } catch (error) {
-  console.error("Failed to add candidate:", error);
-  return NextResponse.json(
-    { error: "Failed to add new candidate" },
-    { status: 500 }
-  );
-}
+    console.error("Error adding candidate:", error); // ✅ fixed
+    return NextResponse.json({ error: "Something failed" }, { status: 500 });
+  }
 }
