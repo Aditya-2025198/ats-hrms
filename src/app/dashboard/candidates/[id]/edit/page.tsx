@@ -2,15 +2,21 @@ import { PrismaClient } from "@prisma/client";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 
+// ✅ Prisma Client
 const prisma = new PrismaClient();
 
-export default async function EditCandidatePage({
-  params,
-}: {
-  params: { id: string };
-}) {
+// ✅ Fix: Correct type structure for params
+interface EditCandidatePageProps {
+  params: {
+    id: string;
+  };
+}
+
+export default async function EditCandidatePage({ params }: EditCandidatePageProps) {
+  const id = Number(params.id);
+
   const candidate = await prisma.candidate.findUnique({
-    where: { id: Number(params.id) },
+    where: { id },
   });
 
   if (!candidate) return notFound();
@@ -18,8 +24,7 @@ export default async function EditCandidatePage({
   return (
     <div className="max-w-xl mx-auto p-6 bg-white rounded shadow">
       <h1 className="text-2xl font-bold mb-4">Edit Candidate</h1>
-
-      <form method="POST" action={`/api/candidates/${candidate.id}`}>
+      <form method="POST" action={`/api/candidates/${id}`}>
         <div className="mb-4">
           <label className="block mb-1">Name</label>
           <input
@@ -52,10 +57,7 @@ export default async function EditCandidatePage({
           </select>
         </div>
 
-        <button
-          type="submit"
-          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-        >
+        <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded">
           Save Changes
         </button>
         <Link href="/dashboard/candidates" className="ml-4 text-sm text-gray-600">
