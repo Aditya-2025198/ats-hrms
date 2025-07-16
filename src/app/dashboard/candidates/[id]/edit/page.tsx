@@ -4,13 +4,11 @@ import Link from "next/link";
 
 const prisma = new PrismaClient();
 
-interface PageProps {
-  params: {
-    id: string;
-  };
-}
-
-export default async function EditCandidatePage({ params }: PageProps) {
+export default async function EditCandidatePage({
+  params,
+}: {
+  params: { id: string };
+}) {
   const candidate = await prisma.candidate.findUnique({
     where: { id: Number(params.id) },
   });
