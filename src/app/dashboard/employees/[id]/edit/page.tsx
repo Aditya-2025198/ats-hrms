@@ -5,33 +5,46 @@ import { useState } from "react"
 import employeesData from "@/data/employees.json"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 
 export default function EditEmployeePage() {
   const params = useParams()
   const router = useRouter()
-  const employeeId = parseInt(params.id as string)
+
+  const employeeId =
+    typeof params?.id === "string" ? parseInt(params.id) : null
+
+  if (!employeeId) {
+    return <p className="p-6 text-red-500">Invalid employee ID.</p>
+  }
 
   const employee = employeesData.find((e) => e.id === employeeId)
 
-  const [form, setForm] = useState({
-    name: employee?.name || "",
-    email: employee?.email || "",
-    department: employee?.department || "",
-    role: employee?.role || "",
-    status: employee?.status || "Active",
-  })
+  if (!employee) {
+    return <p className="p-6 text-red-500">Employee not found.</p>
+  }
 
-  if (!employee) return <p className="p-6 text-red-500">Employee not found.</p>
+  const [form, setForm] = useState({
+    name: employee.name,
+    email: employee.email,
+    department: employee.department,
+    role: employee.role,
+    status: employee.status,
+  })
 
   const handleChange = (field: string, value: string) => {
     setForm((prev) => ({ ...prev, [field]: value }))
   }
 
   const handleSave = () => {
-    // For now, we just log the new data.
     console.log("Updated Employee:", { id: employeeId, ...form })
     alert("Changes saved locally (not persistent).")
     router.push("/dashboard/employees")
@@ -76,7 +89,10 @@ export default function EditEmployeePage() {
 
           <div>
             <Label>Status</Label>
-            <Select value={form.status} onValueChange={(val) => handleChange("status", val)}>
+            <Select
+              value={form.status}
+              onValueChange={(val) => handleChange("status", val)}
+            >
               <SelectTrigger className="w-[200px]">
                 <SelectValue placeholder="Select status" />
               </SelectTrigger>
