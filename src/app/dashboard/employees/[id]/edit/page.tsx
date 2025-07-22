@@ -1,113 +1,106 @@
-"use client"
+"use client";
 
-import { useParams, useRouter } from "next/navigation"
-import { useState } from "react"
-import employeesData from "@/data/employees.json"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
+import { useEffect, useState } from "react";
+import { useParams, useRouter } from "next/navigation";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import employeesData from "@/data/employees.json";
 
 export default function EditEmployeePage() {
-  const params = useParams()
-  const router = useRouter()
+  const { id } = useParams();
+  const router = useRouter();
+  const [formData, setFormData] = useState({
+    employeeCode: "",
+    name: "",
+    email: "",
+    personalEmail: "",
+    contact: "",
+    altContact: "",
+    department: "",
+    role: "",
+    designation: "",
+    doj: "",
+    grade: "",
+    pan: "",
+    aadhar: "",
+    address: "",
+    uan: "",
+    fatherName: "",
+    highestEducation: "",
+    location: "",
+    nationality: "",
+    reportingTo: "",
+    status: "Active",
+    modeOfSeparation: "",
+    lwd: "",
+  });
 
-  const employeeId =
-    typeof params?.id === "string" ? parseInt(params.id) : null
+  useEffect(() => {
+    const employee = employeesData.find((e) => String(e.id) === id);
+    if (employee) {
+      setFormData({
+        ...formData,
+        ...employee,
+      });
+    }
+  }, [id]);
 
-  if (!employeeId) {
-    return <p className="p-6 text-red-500">Invalid employee ID.</p>
-  }
+  const handleChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
 
-  const employee = employeesData.find((e) => e.id === employeeId)
-
-  if (!employee) {
-    return <p className="p-6 text-red-500">Employee not found.</p>
-  }
-
-  const [form, setForm] = useState({
-    name: employee.name,
-    email: employee.email,
-    department: employee.department,
-    role: employee.role,
-    status: employee.status,
-  })
-
-  const handleChange = (field: string, value: string) => {
-    setForm((prev) => ({ ...prev, [field]: value }))
-  }
-
-  const handleSave = () => {
-    console.log("Updated Employee:", { id: employeeId, ...form })
-    alert("Changes saved locally (not persistent).")
-    router.push("/dashboard/employees")
-  }
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    console.log("Updated Employee:", formData);
+    router.push("/dashboard/employees");
+  };
 
   return (
-    <div className="p-6 space-y-6">
-      <h2 className="text-2xl font-semibold">Edit Employee</h2>
-      <Card>
-        <CardContent className="p-4 space-y-4">
-          <div>
-            <Label>Name</Label>
+    <div className="p-6 max-w-3xl mx-auto space-y-4">
+      <h2 className="text-2xl font-bold">Edit Employee</h2>
+      <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {Object.entries(formData).map(([key, value]) =>
+          key === "doj" ? (
+            // Disable editing DOJ
             <Input
-              value={form.name}
-              onChange={(e) => handleChange("name", e.target.value)}
+              key={key}
+              name={key}
+              placeholder="Date of Joining"
+              value={value}
+              disabled
             />
-          </div>
-
-          <div>
-            <Label>Email</Label>
+          ) : key !== "modeOfSeparation" && key !== "lwd" ? (
             <Input
-              value={form.email}
-              onChange={(e) => handleChange("email", e.target.value)}
+              key={key}
+              name={key}
+              placeholder={key.replace(/([A-Z])/g, " $1")}
+              value={value}
+              onChange={handleChange}
             />
-          </div>
+          ) : null
+        )}
 
-          <div>
-            <Label>Department</Label>
+        {(formData.status === "Inactive" || formData.status === "Serving Notice") && (
+          <>
             <Input
-              value={form.department}
-              onChange={(e) => handleChange("department", e.target.value)}
+              name="modeOfSeparation"
+              placeholder="Mode of Separation"
+              value={formData.modeOfSeparation}
+              onChange={handleChange}
             />
-          </div>
-
-          <div>
-            <Label>Role</Label>
             <Input
-              value={form.role}
-              onChange={(e) => handleChange("role", e.target.value)}
+              name="lwd"
+              placeholder="Last Working Date"
+              value={formData.lwd}
+              onChange={handleChange}
             />
-          </div>
+          </>
+        )}
 
-          <div>
-            <Label>Status</Label>
-            <Select
-              value={form.status}
-              onValueChange={(val) => handleChange("status", val)}
-            >
-              <SelectTrigger className="w-[200px]">
-                <SelectValue placeholder="Select status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="Active">Active</SelectItem>
-                <SelectItem value="Inactive">Inactive</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="pt-4">
-            <Button onClick={handleSave}>Save Changes</Button>
-          </div>
-        </CardContent>
-      </Card>
+        <div className="col-span-full">
+          <Button type="submit">Update Employee</Button>
+        </div>
+      </form>
     </div>
-  )
+  );
 }

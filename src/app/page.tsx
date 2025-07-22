@@ -1,24 +1,33 @@
-// src/app/page.tsx
+import Image from "next/image";
 import Link from "next/link";
 
 export default function Home() {
   return (
-    <div className="min-h-screen flex flex-col">
-      {/* Hero Section */}
-      <section className="bg-gray-100 dark:bg-gray-900 py-20 text-center px-4">
-        <h1 className="text-4xl sm:text-5xl font-bold mb-4 text-gray-900 dark:text-white">
-          Simplify Hiring with ATS/HRMS
-        </h1>
-        <p className="text-lg text-gray-700 dark:text-gray-300 max-w-xl mx-auto mb-8">
-          Powerful applicant tracking and employee management in one platform.
-        </p>
-        <Link
-          href="/dashboard"
-          className="inline-block bg-black text-white px-6 py-3 rounded-full text-sm font-semibold hover:bg-gray-800 transition"
-        >
-          Go to Dashboard
-        </Link>
-      </section>
+    <div className="relative min-h-screen">
+      {/* Banner Image with overlay */}
+      <div className="relative w-full h-[400px]">
+        <Image
+          src="/top-banner.jpeg" // Make sure this file is inside the public folder
+          alt="ATS HRMS Banner"
+          fill
+          className="object-cover"
+          priority
+        />
+        <div className="absolute inset-0 bg-black/50 flex flex-col justify-center items-center text-white text-center px-4">
+          <h1 className="text-4xl sm:text-5xl font-bold mb-4">
+            Simplify Hiring with ATS & HRMS
+          </h1>
+          <p className="text-lg max-w-xl">
+            Powerful applicant tracking and employee management in one platform.
+          </p>
+          <Link
+            href="/login"
+            className="mt-6 inline-block bg-white text-black px-6 py-2 rounded-full font-semibold hover:bg-gray-200 transition"
+          >
+            Login
+          </Link>
+        </div>
+      </div>
 
       {/* Features Section */}
       <section className="py-16 bg-white dark:bg-gray-950 px-4">

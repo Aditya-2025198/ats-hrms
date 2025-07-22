@@ -1,75 +1,105 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { Input } from "@/components/ui/input"
-import { Button } from "@/components/ui/button"
-import { Label } from "@/components/ui/label"
-import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select"
-import { useRouter } from "next/navigation"
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 
 export default function NewJobPostPage() {
-  const router = useRouter()
+  const router = useRouter();
 
-  const [title, setTitle] = useState("")
-  const [department, setDepartment] = useState("")
-  const [status, setStatus] = useState("Open")
+  const [job, setJob] = useState({
+    title: "",
+    jobCode: "",
+    date: new Date().toISOString().split("T")[0],
+    department: "",
+    vacancy: "",
+    status: "Open",
+    initiatedBy: "",
+    jd: "",
+    supportingDoc: "",
+  });
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setJob({ ...job, [name]: value });
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, files } = e.target;
+    if (files?.[0]) {
+      setJob({ ...job, [name]: files[0].name });
+    }
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-
-    // TODO: Save to database or file
-    console.log({
-      title,
-      department,
-      status,
-    })
-
-    alert("Job posted (mock save). Redirecting...")
-    router.push("/dashboard/jobs")
-  }
+    e.preventDefault();
+    console.log("New Job Post:", job);
+    // Future: Send job to DB or API here
+    router.push("/dashboard/jobs");
+  };
 
   return (
-    <div className="p-6 max-w-xl space-y-6">
-      <h2 className="text-2xl font-semibold">New Job Post</h2>
+    <Card className="max-w-2xl mx-auto p-6 space-y-6">
+      <h2 className="text-2xl font-semibold text-blue-900">New Job Post</h2>
 
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="space-y-1">
-          <Label>Job Title</Label>
-          <Input
-            placeholder="e.g. Frontend Developer"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            required
-          />
+      <form onSubmit={handleSubmit} className="space-y-4 text-sm">
+        <div>
+          <Label htmlFor="title">Job Title</Label>
+          <Input id="title" name="title" value={job.title} onChange={handleChange} required />
         </div>
 
-        <div className="space-y-1">
-          <Label>Department</Label>
-          <Input
-            placeholder="e.g. Engineering"
-            value={department}
-            onChange={(e) => setDepartment(e.target.value)}
-            required
-          />
+        <div>
+          <Label htmlFor="jobCode">Job Code</Label>
+          <Input id="jobCode" name="jobCode" value={job.jobCode} onChange={handleChange} required />
         </div>
 
-        <div className="space-y-1">
-          <Label>Status</Label>
-          <Select value={status} onValueChange={setStatus}>
-            <SelectTrigger className="w-full">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="Open">Open</SelectItem>
-              <SelectItem value="Closed">Closed</SelectItem>
-            </SelectContent>
-          </Select>
+        <div>
+          <Label htmlFor="department">Department</Label>
+          <Input id="department" name="department" value={job.department} onChange={handleChange} required />
+        </div>
+
+        <div>
+          <Label htmlFor="vacancy">Vacancy</Label>
+          <Input id="vacancy" name="vacancy" type="number" value={job.vacancy} onChange={handleChange} required />
+        </div>
+
+        <div>
+          <Label htmlFor="initiatedBy">Initiated By</Label>
+          <Input id="initiatedBy" name="initiatedBy" value={job.initiatedBy} onChange={handleChange} required />
+        </div>
+
+        <div>
+          <Label htmlFor="status">Status</Label>
+          <select
+            id="status"
+            name="status"
+            value={job.status}
+            onChange={handleChange}
+            className="w-full border rounded px-2 py-2"
+          >
+            <option value="Open">Open</option>
+            <option value="Closed">Closed</option>
+            <option value="Hold">Hold</option>
+          </select>
+        </div>
+
+        <div>
+          <Label htmlFor="jd">Upload JD</Label>
+          <Input id="jd" name="jd" type="file" onChange={handleFileChange} />
+        </div>
+
+        <div>
+          <Label htmlFor="supportingDoc">Upload Supporting Document</Label>
+          <Input id="supportingDoc" name="supportingDoc" type="file" onChange={handleFileChange} />
         </div>
 
         <Button type="submit" className="w-full">
           Post Job
         </Button>
       </form>
-    </div>
-  )
+    </Card>
+  );
 }

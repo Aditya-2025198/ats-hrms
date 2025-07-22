@@ -1,57 +1,69 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { useRouter } from "next/navigation"
-import { Card, CardContent } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Button } from "@/components/ui/button"
+import Image from "next/image";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
 
 export default function LoginPage() {
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
-  const [error, setError] = useState("")
-  const router = useRouter()
+  const router = useRouter();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
 
-  const handleLogin = async () => {
-    setError("")
-    const res = await fetch("/api/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password }),
-    })
-
-    if (res.ok) {
-      const data = await res.json()
-      console.log("Logged in:", data)
-      router.push("/dashboard")
+  const handleLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (email === "admin@ats.com" && password === "admin123") {
+      router.push("/dashboard");
     } else {
-      setError("Invalid email or password")
+      setError("Invalid email or password");
     }
-  }
+  };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-100 p-4">
-      <Card className="w-full max-w-sm p-6">
-        <CardContent className="space-y-4">
-          <h2 className="text-2xl font-semibold text-center">Login to ATS/HRMS</h2>
-          <Input
+    <div className="relative min-h-screen w-full">
+      {/* Fullscreen background image */}
+      <Image
+       src="/login-background.webp" // ✅ webp image path
+       alt="Login Background"
+       fill
+       className="object-cover z-0"
+       priority
+      />
+
+      {/* Overlay with form */}
+      <div className="absolute inset-0 bg-black/50 flex items-center justify-center z-10">
+        <form
+          onSubmit={handleLogin}
+          className="bg-white bg-opacity-90 p-8 rounded-xl shadow-md w-full max-w-md space-y-5"
+        >
+          <h1 className="text-2xl font-bold text-center text-gray-900">Welcome to HRMS</h1>
+          {error && <p className="text-red-600 text-sm">{error}</p>}
+
+          <input
             type="email"
             placeholder="Email"
+            className="w-full px-4 py-2 border rounded"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
+            required
           />
-          <Input
+          <input
             type="password"
             placeholder="Password"
+            className="w-full px-4 py-2 border rounded"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
+            required
           />
-          {error && <p className="text-red-500 text-sm">{error}</p>}
-          <Button className="w-full" onClick={handleLogin}>
-            Log In
-          </Button>
-        </CardContent>
-      </Card>
+
+          <button
+            type="submit"
+            className="w-full bg-black text-white py-2 rounded hover:bg-gray-800 transition"
+          >
+            Sign in
+          </button>
+        </form>
+      </div>
     </div>
-  )
+  );
 }
