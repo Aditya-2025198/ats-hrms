@@ -2,86 +2,112 @@
 
 import { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
+import { supabase } from "@/lib/supabaseClient";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
 
 export default function EditCandidatePage() {
   const router = useRouter();
   const params = useParams();
-  const { id } = params;
+  const id = params?.id as string;
 
-  const [candidate, setCandidate] = useState<any>(null);
+  const [form, setForm] = useState({
+    name: "",
+    number: "",
+    email: "",
+    jobCode: "",
+    position: "",
+    department: "",
+    status: "Applied",
+    date: "",
+    initiatedBy: "",
+  });
 
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+
+  // Fetch candidate data
   useEffect(() => {
-    // Replace with API call: fetch(`/api/candidates/${id}`)
-    const mockCandidate = {
-      name: "Jane Doe",
-      email: "jane@example.com",
-      phone: "9876543210",
-      position: "Product Manager",
-      department: "Product",
-      jobCode: "013",
-      status: "Interviewed",
-      initiatedBy: "Arjun",
-    };
-    setCandidate(mockCandidate);
-  }, [id]);
+    const fetchCandidate = async () => {
+      const { data, error } = await supabase
+        .from("candidates")
+        .select("*")
+        .eq("id", id)
+        .single();
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { name, value, files } = e.target as HTMLInputElement;
-    setCandidate((prev: any) => ({
-      ...prev,
-      [name]: files ? files[0] : value,
-    }));
+      if (error) {
+        alert("Error fetching candidate: " + error.message);
+        router.push("/dashboard/candidates");
+      } else if (data) {
+        setForm({
+          name: data.name || "",
+          number: data.number || "",
+          email: data.email || "",
+          jobCode: data.jobCode || "",
+          position: data.position || "",
+          department: data.department || "",
+          status: data.status || "Applied",
+          date: data.date || new Date().toISOString().split("T")[0],
+          initiatedBy: data.initiatedBy || "",
+        });
+      }
+      setLoading(false);
+    };
+    if (id) fetchCandidate();
+  }, [id, router]);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setForm({ ...form, [e.target.name]: e.target.value });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Updated candidate:", candidate);
-    // PUT or PATCH request to update candidate
-    router.push("/dashboard/candidates");
+    setSaving(true);
+
+    const { error } = await supabase
+      .from("candidates")
+      .update({ ...form })
+      .eq("id", id);
+
+    setSaving(false);
+
+    if (error) {
+      alert("Error updating candidate: " + error.message);
+    } else {
+      router.push("/dashboard/candidates");
+    }
   };
 
-  if (!candidate) return <div>Loading...</div>;
+  if (loading) return <p>Loading candidate...</p>;
 
   return (
-    <div className="max-w-xl mx-auto p-6 bg-white rounded-xl shadow">
-      <h2 className="text-xl font-semibold mb-4">Edit Candidate</h2>
+    <div className="max-w-2xl mx-auto space-y-6">
+      <h1 className="text-2xl font-bold">Edit Candidate</h1>
       <form onSubmit={handleSubmit} className="space-y-4">
-        {[
-          ["Name", "name"],
-          ["Email", "email"],
-          ["Phone", "phone"],
-          ["Position", "position"],
-          ["Department", "department"],
-          ["Job Code", "jobCode"],
-          ["Initiated By", "initiatedBy"]
-        ].map(([label, name]) => (
-          <div key={name}>
-            <Label>{label}</Label>
-            <Input name={name} value={(candidate as any)[name]} onChange={handleChange} required />
+        {["name", "number", "email", "jobCode", "position", "department", "initiatedBy"].map((field) => (
+          <div key={field}>
+            <Label htmlFor={field}>{field.charAt(0).toUpperCase() + field.slice(1)}</Label>
+            <Input
+              id={field}
+              name={field}
+              value={(form as any)[field]}
+              onChange={handleChange}
+              required
+            />
           </div>
         ))}
-
         <div>
           <Label>Status</Label>
-          <select name="status" value={candidate.status} onChange={handleChange} className="w-full border px-3 py-2 rounded">
-            <option>Applied</option>
-            <option>Screening</option>
-            <option>Interviewed</option>
-            <option>Offered</option>
-            <option>Hired</option>
-            <option>Rejected</option>
-          </select>
+          <Input name="status" value={form.status} onChange={handleChange} />
         </div>
-
         <div>
-          <Label>Upload New Resume</Label>
-          <Input name="resume" type="file" onChange={handleChange} />
+          <Label>Date</Label>
+          <Input type="date" name="date" value={form.date} onChange={handleChange} />
         </div>
-
-        <Button type="submit" className="w-full">Update Candidate</Button>
+        <Button type="submit" disabled={saving}>
+          {saving ? "Updating..." : "Update Candidate"}
+        </Button>
       </form>
     </div>
   );

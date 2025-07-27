@@ -2,76 +2,79 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { supabase } from "@/lib/supabaseClient";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
 
 export default function AddCandidatePage() {
   const router = useRouter();
-  const [candidate, setCandidate] = useState({
+  const [form, setForm] = useState({
     name: "",
+    number: "",
     email: "",
-    phone: "",
+    jobCode: "",
     position: "",
     department: "",
-    jobCode: "",
     status: "Applied",
+    date: new Date().toISOString().split("T")[0],
     initiatedBy: "",
-    resume: null as File | null,
   });
+  const [loading, setLoading] = useState(false);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { name, value, files } = e.target as HTMLInputElement;
-    setCandidate((prev) => ({
-      ...prev,
-      [name]: files ? files[0] : value,
-    }));
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setForm({ ...form, [e.target.name]: e.target.value });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Submitting candidate:", candidate);
-    // Add POST request here if backend is connected
-    router.push("/dashboard/candidates");
+    setLoading(true);
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const { error } = await supabase.from("candidates").insert([
+      {
+        ...form,
+        company_id: user.user_metadata.company_id,
+      },
+    ]);
+
+    setLoading(false);
+    if (error) {
+      alert("Error adding candidate: " + error.message);
+    } else {
+      router.push("/dashboard/candidates");
+    }
   };
 
   return (
-    <div className="max-w-xl mx-auto p-6 bg-white rounded-xl shadow">
-      <h2 className="text-xl font-semibold mb-4">Add New Candidate</h2>
+    <div className="max-w-2xl mx-auto space-y-6">
+      <h1 className="text-2xl font-bold">Add New Candidate</h1>
       <form onSubmit={handleSubmit} className="space-y-4">
-        {[
-          ["Name", "name"],
-          ["Email", "email"],
-          ["Phone", "phone"],
-          ["Position", "position"],
-          ["Department", "department"],
-          ["Job Code", "jobCode"],
-          ["Initiated By", "initiatedBy"]
-        ].map(([label, name]) => (
-          <div key={name}>
-            <Label>{label}</Label>
-            <Input name={name} value={(candidate as any)[name]} onChange={handleChange} required />
+        {["name", "number", "email", "jobCode", "position", "department", "initiatedBy"].map((field) => (
+          <div key={field}>
+            <Label htmlFor={field}>{field.charAt(0).toUpperCase() + field.slice(1)}</Label>
+            <Input
+              id={field}
+              name={field}
+              value={(form as any)[field]}
+              onChange={handleChange}
+              required
+            />
           </div>
         ))}
-
         <div>
           <Label>Status</Label>
-          <select name="status" value={candidate.status} onChange={handleChange} className="w-full border px-3 py-2 rounded">
-            <option>Applied</option>
-            <option>Screening</option>
-            <option>Interviewed</option>
-            <option>Offered</option>
-            <option>Hired</option>
-            <option>Rejected</option>
-          </select>
+          <Input name="status" value={form.status} onChange={handleChange} />
         </div>
-
         <div>
-          <Label>Upload Resume</Label>
-          <Input name="resume" type="file" onChange={handleChange} />
+          <Label>Date</Label>
+          <Input type="date" name="date" value={form.date} onChange={handleChange} />
         </div>
-
-        <Button type="submit" className="w-full">Add Candidate</Button>
+        <Button type="submit" disabled={loading}>
+          {loading ? "Saving..." : "Add Candidate"}
+        </Button>
       </form>
     </div>
   );

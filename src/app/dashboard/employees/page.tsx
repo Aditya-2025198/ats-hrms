@@ -12,6 +12,8 @@ const employeesData = [
     id: 1,
     employeeCode: "EMP001",
     name: "Arjun Verma",
+    gender: "Male",
+    image: "/employees/Arjun.jfif", // <-- Added Image
     email: "arjun@company.com",
     personalEmail: "arjun.verma@gmail.com",
     contact: "9876543210",
@@ -36,6 +38,8 @@ const employeesData = [
     id: 2,
     employeeCode: "EMP002",
     name: "Sneha Sharma",
+    gender: "Female",
+    image: "/employees/Sneha.jfif",
     email: "sneha@company.com",
     personalEmail: "sneha.sharma@gmail.com",
     contact: "9876543211",
@@ -62,6 +66,8 @@ const employeesData = [
     id: 3,
     employeeCode: "EMP003",
     name: "Zoya Khan",
+    gender: "Female",
+    image: "/employees/Zoya.jfif",
     email: "zoya@company.com",
     personalEmail: "zoya.khan@gmail.com",
     contact: "9876543212",
@@ -83,6 +89,32 @@ const employeesData = [
     status: "Inactive",
     modeOfSeparation: "Termination",
     lwd: "2024-12-31"
+  },
+  {
+    id: 4,
+    employeeCode: "EMP004",
+    name: "Vinay Singh",
+    gender: "Male",
+    image: "/employees/Vinay.jfif", // <-- Added Image
+    email: "vinay@company.com",
+    personalEmail: "vinay.singh@gmail.com",
+    contact: "9876543210",
+    altContact: "9876500000",
+    department: "Engineering",
+    role: "Frontend Developer",
+    designation: "Senior Developer",
+    doj: "2022-04-01",
+    grade: "G5",
+    pan: "ABCDE1234F",
+    aadhar: "1234-5678-9012",
+    address: "123 Main Street, Delhi",
+    uan: "123456789012",
+    fatherName: "Raj Verma",
+    highestEducation: "B.Tech",
+    location: "Delhi",
+    nationality: "Indian",
+    reportingTo: "Nisha Rao",
+    status: "Active",
   }
 ];
 
@@ -203,28 +235,38 @@ export default function EmployeesPage() {
                 onClick={() => toggleExpand(e.id)}
                 className="cursor-pointer space-y-1 hover:bg-gray-50 rounded-md p-2"
               >
-                <div className="flex items-center justify-between">
-                  <h3 className="text-xl font-semibold">{e.name}</h3>
-                  <span className="text-sm text-gray-400">{e.employeeCode}</span>
+                <div className="flex items-center gap-4">
+                  <img
+                    src={e.image}
+                    alt={e.name}
+                    className="w-16 h-16 rounded-full object-cover border"
+                  />
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-xl font-semibold">{e.name}</h3>
+                      <span className="text-sm text-gray-400">{e.employeeCode}</span>
+                    </div>
+                    <p className="text-sm text-gray-500">{e.email}</p>
+                    <p className="text-sm text-gray-600">{e.department} - {e.designation} - {e.location}</p>
+                    <p className="text-sm text-gray-600">Reporting to: {e.reportingTo}</p>
+                    <span
+                      className={`inline-block mt-1 px-2 py-0.5 text-xs font-medium rounded-full ${
+                        e.status === "Active"
+                          ? "bg-green-100 text-green-700"
+                          : e.status === "Inactive"
+                          ? "bg-red-100 text-red-700"
+                          : "bg-yellow-100 text-yellow-700"
+                      }`}
+                    >
+                      {e.status}
+                    </span>
+                  </div>
                 </div>
-                <p className="text-sm text-gray-500">{e.email}</p>
-                <p className="text-sm text-gray-600">{e.department} - {e.designation} - {e.location}</p>
-                <p className="text-sm text-gray-600">Reporting to: {e.reportingTo}</p>
-                <span
-                  className={`inline-block mt-1 px-2 py-0.5 text-xs font-medium rounded-full ${
-                    e.status === "Active"
-                      ? "bg-green-100 text-green-700"
-                      : e.status === "Inactive"
-                      ? "bg-red-100 text-red-700"
-                      : "bg-yellow-100 text-yellow-700"
-                  }`}
-                >
-                  {e.status}
-                </span>
               </div>
 
               {expanded === e.id && (
                 <div className="mt-4 border-t pt-4 text-sm text-gray-700 space-y-2">
+                  <div><strong>Gender:</strong> {e.gender}</div>
                   <div><strong>DOJ:</strong> {e.doj}</div>
                   <div><strong>Grade:</strong> {e.grade}</div>
                   <div><strong>Personal Email:</strong> {e.personalEmail}</div>
