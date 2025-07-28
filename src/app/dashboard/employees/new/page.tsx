@@ -8,7 +8,8 @@ export default function AddEmployeePage() {
   const handleAdd = (data: any) => {
     // Save new employee (currently in memory, later DB)
     console.log("New Employee:", data);
-    router.push("/dashboard/hrms/employees");
+    // Redirect to employees list
+    router.push("/dashboard/employees");
   };
 
   return (
