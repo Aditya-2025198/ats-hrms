@@ -30,75 +30,27 @@ export default function CandidatesPage() {
   const [search, setSearch] = useState("");
   const [jobCodeFilter, setJobCodeFilter] = useState("All");
   const [loading, setLoading] = useState(true);
-  const [userData, setUserData] = useState<any>(null);
-
-  // Add candidate form
-  const [form, setForm] = useState({
-    name: "",
-    email: "",
-    number: "",
-    jobCode: "",
-    position: "",
-    department: "",
-    status: "Applied",
-  });
-
-  // Fetch logged-in user + candidates
-  const fetchCandidates = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-    setUserData(user);
-
-    const { data, error } = await supabase
-      .from("candidates")
-      .select("*")
-      .eq("company_id", user.user_metadata.company_id);
-
-    if (error) console.error(error);
-    else setCandidates(data || []);
-    setLoading(false);
-  };
 
   useEffect(() => {
+    const fetchCandidates = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data, error } = await supabase
+        .from("candidates")
+        .select("*")
+        .eq("company_id", user.user_metadata.company_id);
+
+      if (error) {
+        console.error(error);
+      } else {
+        setCandidates(data || []);
+      }
+      setLoading(false);
+    };
+
     fetchCandidates();
   }, []);
-
-  // Add candidate
-  const handleAddCandidate = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!userData) return alert("User not found");
-
-    const { error } = await supabase.from("candidates").insert([
-      {
-        ...form,
-        company_id: userData.user_metadata.company_id,
-        initiatedBy: userData.email,
-        date: new Date().toISOString().split("T")[0],
-      },
-    ]);
-
-    if (error) {
-      console.error(error);
-      alert("Error adding candidate");
-    } else {
-      setForm({
-        name: "",
-        email: "",
-        number: "",
-        jobCode: "",
-        position: "",
-        department: "",
-        status: "Applied",
-      });
-      fetchCandidates();
-    }
-  };
-
-  // Delete
-  const handleDelete = async (id: string) => {
-    await supabase.from("candidates").delete().eq("id", id);
-    setCandidates(candidates.filter((c) => c.id !== id));
-  };
 
   const filteredCandidates = candidates.filter((candidate) => {
     const matchesJob =
@@ -111,33 +63,33 @@ export default function CandidatesPage() {
     return matchesJob && matchesStatus && matchesSearch;
   });
 
+  const handleDelete = async (id: string) => {
+    await supabase.from("candidates").delete().eq("id", id);
+    setCandidates(candidates.filter((c) => c.id !== id));
+  };
+
   if (loading) return <p>Loading candidates...</p>;
 
   return (
     <div className="space-y-6">
+      {/* Header with Actions */}
       <div className="flex flex-wrap justify-between items-center gap-4">
         <h1 className="text-2xl font-bold">Candidates</h1>
-        <a
-          href="/api/candidates/export"
-          className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
-        >
-          Download Excel
-        </a>
+        <div className="flex gap-2">
+          <Link
+            href="/dashboard/candidates/new"
+            className="bg-black text-white px-4 py-2 rounded"
+          >
+            Add New Candidate
+          </Link>
+          <a
+            href="/api/candidates/export"
+            className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
+          >
+            Download Excel
+          </a>
+        </div>
       </div>
-
-      {/* Add Candidate Form */}
-      <form onSubmit={handleAddCandidate} className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 border rounded">
-        <Input placeholder="Name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
-        <Input placeholder="Email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
-        <Input placeholder="Phone Number" value={form.number} onChange={(e) => setForm({ ...form, number: e.target.value })} />
-        <Input placeholder="Job Code" value={form.jobCode} onChange={(e) => setForm({ ...form, jobCode: e.target.value })} />
-        <Input placeholder="Position" value={form.position} onChange={(e) => setForm({ ...form, position: e.target.value })} />
-        <Input placeholder="Department" value={form.department} onChange={(e) => setForm({ ...form, department: e.target.value })} />
-        <select value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })} className="border px-3 py-2 rounded">
-          {["Applied", "Interviewed", "Offered", "Hired", "Rejected"].map((s) => <option key={s}>{s}</option>)}
-        </select>
-        <Button type="submit" className="col-span-full bg-blue-600 text-white">Add Candidate</Button>
-      </form>
 
       {/* Filters */}
       <div className="flex flex-wrap items-center gap-4">
@@ -148,7 +100,6 @@ export default function CandidatesPage() {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
-
         <select
           value={jobCodeFilter}
           onChange={(e) => setJobCodeFilter(e.target.value)}
@@ -159,7 +110,6 @@ export default function CandidatesPage() {
           <option value="013">013</option>
           <option value="014">014</option>
         </select>
-
         <div className="flex gap-2">
           {["All", "Applied", "Interviewed", "Offered", "Hired", "Rejected"].map(
             (status) => (
@@ -237,5 +187,3 @@ export default function CandidatesPage() {
     </div>
   );
 }
-import Image from "next/image";
-import { useRouter } from "next/navigation";
