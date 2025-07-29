@@ -1,27 +1,55 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
 generator client {
   provider = "prisma-client-js"
 }
 
-datasource db {
-  provider = "sqlite"
-  url      = env("DATABASE_URL")
+model Job {
+  id          String       @id @default(cuid())
+  title       String
+  code        String       @unique
+  department  String
+  description String?
+  createdAt   DateTime     @default(now())
+  candidates  Candidate[]
 }
 
 model Candidate {
-  id        Int      @id @default(autoincrement())
-  name      String
-  email     String   @unique
-  position  String
-  status    String   // Could be enum in future
-  createdAt DateTime @default(now())
+  id          String   @id @default(cuid())
+  name        String
+  email       String
+  phone       String
+  jobCode     String
+  status      String
+  resumeUrl   String?
+  initiatedBy String?
+  createdAt   DateTime @default(now())
+  job         Job      @relation(fields: [jobCode], references: [code])
 }
 
 model Employee {
-  id         Int      @id @default(autoincrement())
-  name       String
-  email      String   @unique
-  department String
-  role       String
-  status     String
-  createdAt  DateTime @default(now())
+  id               String   @id @default(cuid())
+  employeeCode     String   @unique
+  name             String
+  email            String
+  phone            String
+  department       String
+  designation      String
+  status           String
+  dateOfJoining    DateTime
+  personalEmail    String?
+  grade            String?
+  pan              String?
+  aadhaar          String?
+  address          String?
+  altContact       String?
+  uan              String?
+  fatherName       String?
+  education        String?
+  modeOfSeparation String?
+  lastWorkingDay   DateTime?
+  createdAt        DateTime @default(now())
 }

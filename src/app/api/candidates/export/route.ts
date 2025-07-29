@@ -1,44 +1,21 @@
-import { PrismaClient } from "@prisma/client";
 import { NextResponse } from "next/server";
+import { supabase } from "@/lib/supabaseClient";
 import ExcelJS from "exceljs";
 
-const prisma = new PrismaClient();
-
 export async function GET() {
-  try {
-    const candidates = await prisma.candidate.findMany();
+  const { data, error } = await supabase.from("candidates").select("*");
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-    const workbook = new ExcelJS.Workbook();
-    const worksheet = workbook.addWorksheet("Candidates");
+  const workbook = new ExcelJS.Workbook();
+  const sheet = workbook.addWorksheet("Candidates");
+  sheet.columns = Object.keys(data[0] || {}).map((key) => ({ header: key, key }));
+  data.forEach((row) => sheet.addRow(row));
 
-    worksheet.columns = [
-      { header: "ID", key: "id", width: 10 },
-      { header: "Name", key: "name", width: 30 },
-      { header: "Email", key: "email", width: 30 },
-      { header: "Position", key: "position", width: 25 },
-      { header: "Status", key: "status", width: 20 },
-    ];
-
-    candidates.forEach((candidate) => {
-      worksheet.addRow(candidate);
-    });
-
-    const buffer = await workbook.xlsx.writeBuffer();
-
-    return new Response(buffer, {
-      status: 200,
-      headers: {
-        "Content-Type":
-          "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        "Content-Disposition": "attachment; filename=candidates.xlsx",
-      },
-    });
-  } catch (error) {
-  console.error("Export Error:", error instanceof Error ? error.message : error);
-  return new NextResponse(
-    JSON.stringify({ error: "Failed to generate Excel file" }),
-    { status: 500, headers: { "Content-Type": "application/json" } }
-  );
-}
-
+  const buffer = await workbook.xlsx.writeBuffer();
+  return new NextResponse(buffer, {
+    headers: {
+      "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      "Content-Disposition": "attachment; filename=candidates.xlsx",
+    },
+  });
 }
