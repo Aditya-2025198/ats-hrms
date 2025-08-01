@@ -1,306 +1,126 @@
 "use client";
 
-import Link from "next/link";
-import { useState } from "react";
-import { Card, CardContent } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { ChevronDown } from "lucide-react";
-
-const employeesData = [
-  {
-    id: 1,
-    employeeCode: "EMP001",
-    name: "Arjun Verma",
-    gender: "Male",
-    image: "/employees/Arjun.jfif", // <-- Added Image
-    email: "arjun@company.com",
-    personalEmail: "arjun.verma@gmail.com",
-    contact: "9876543210",
-    altContact: "9876500000",
-    department: "Engineering",
-    role: "Frontend Developer",
-    designation: "Senior Developer",
-    doj: "2022-04-01",
-    grade: "G5",
-    pan: "ABCDE1234F",
-    aadhar: "1234-5678-9012",
-    address: "123 Main Street, Delhi",
-    uan: "123456789012",
-    fatherName: "Raj Verma",
-    highestEducation: "B.Tech",
-    location: "Delhi",
-    nationality: "Indian",
-    reportingTo: "Nisha Rao",
-    status: "Active",
-  },
-  {
-    id: 2,
-    employeeCode: "EMP002",
-    name: "Sneha Sharma",
-    gender: "Female",
-    image: "/employees/Sneha.jfif",
-    email: "sneha@company.com",
-    personalEmail: "sneha.sharma@gmail.com",
-    contact: "9876543211",
-    altContact: "9876511111",
-    department: "Human Resources",
-    role: "HR Manager",
-    designation: "Manager",
-    doj: "2020-06-15",
-    grade: "G6",
-    pan: "ABCDE1234G",
-    aadhar: "2234-5678-9012",
-    address: "456 Secondary Road, Mumbai",
-    uan: "223456789012",
-    fatherName: "Vikas Sharma",
-    highestEducation: "MBA",
-    location: "Mumbai",
-    nationality: "Indian",
-    reportingTo: "Rahul Mehta",
-    status: "Serving Notice",
-    modeOfSeparation: "Resignation",
-    lwd: "2025-08-10"
-  },
-  {
-    id: 3,
-    employeeCode: "EMP003",
-    name: "Zoya Khan",
-    gender: "Female",
-    image: "/employees/Zoya.jfif",
-    email: "zoya@company.com",
-    personalEmail: "zoya.khan@gmail.com",
-    contact: "9876543212",
-    altContact: "9876522222",
-    department: "Quality Assurance",
-    role: "QA Tester",
-    designation: "Executive QA",
-    doj: "2021-11-20",
-    grade: "G4",
-    pan: "ABCDE1234H",
-    aadhar: "3234-5678-9012",
-    address: "789 Tertiary Lane, Bangalore",
-    uan: "323456789012",
-    fatherName: "Imran Khan",
-    highestEducation: "M.Sc",
-    location: "Bangalore",
-    nationality: "Indian",
-    reportingTo: "Sneha Sharma",
-    status: "Inactive",
-    modeOfSeparation: "Termination",
-    lwd: "2024-12-31"
-  },
-  {
-    id: 4,
-    employeeCode: "EMP004",
-    name: "Vinay Singh",
-    gender: "Male",
-    image: "/employees/Vinay.jfif", // <-- Added Image
-    email: "vinay@company.com",
-    personalEmail: "vinay.singh@gmail.com",
-    contact: "9876543210",
-    altContact: "9876500000",
-    department: "Engineering",
-    role: "Frontend Developer",
-    designation: "Senior Developer",
-    doj: "2022-04-01",
-    grade: "G5",
-    pan: "ABCDE1234F",
-    aadhar: "1234-5678-9012",
-    address: "123 Main Street, Delhi",
-    uan: "123456789012",
-    fatherName: "Raj Verma",
-    highestEducation: "B.Tech",
-    location: "Delhi",
-    nationality: "Indian",
-    reportingTo: "Nisha Rao",
-    status: "Active",
-  }
-];
+import { useEffect, useState } from "react";
 
 export default function EmployeesPage() {
-  const [search, setSearch] = useState("");
-  const [filter, setFilter] = useState("All");
-  const [deptFilter, setDeptFilter] = useState("");
-  const [locFilter, setLocFilter] = useState("");
-  const [natFilter, setNatFilter] = useState("");
-  const [expanded, setExpanded] = useState<number | null>(null);
+  const [employees, setEmployees] = useState<any[]>([]);
+  const [editingEmployee, setEditingEmployee] = useState<any>(null);
+  const [expanded, setExpanded] = useState<string | null>(null);
 
-  const filtered = employeesData.filter((e) => {
-    const matchSearch =
-      e.name.toLowerCase().includes(search.toLowerCase()) ||
-      e.employeeCode.toLowerCase().includes(search.toLowerCase());
+  useEffect(() => {
+    fetchEmployees();
+  }, []);
 
-    const matchStatus =
-      filter === "All" ||
-      e.status.toLowerCase() === filter.toLowerCase();
-
-    const matchDept = deptFilter === "" || e.department === deptFilter;
-    const matchLoc = locFilter === "" || e.location === locFilter;
-    const matchNat = natFilter === "" || e.nationality === natFilter;
-
-    return matchSearch && matchStatus && matchDept && matchLoc && matchNat;
-  });
-
-  const toggleExpand = (id: number) => {
-    setExpanded(expanded === id ? null : id);
+  const fetchEmployees = async () => {
+    const res = await fetch("/api/employees");
+    const data = await res.json();
+    setEmployees(data);
   };
 
-  const departments = [...new Set(employeesData.map((e) => e.department))];
-  const locations = [...new Set(employeesData.map((e) => e.location))];
-  const nationalities = [...new Set(employeesData.map((e) => e.nationality))];
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>, id?: string) => {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    const res = await fetch(id ? `/api/employees/${id}` : "/api/employees", {
+      method: id ? "PUT" : "POST",
+      body: formData,
+    });
+    if (res.ok) {
+      alert(id ? "Employee updated!" : "Employee added!");
+      setEditingEmployee(null);
+      fetchEmployees();
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm("Are you sure?")) return;
+    await fetch(`/api/employees/${id}`, { method: "DELETE" });
+    fetchEmployees();
+  };
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-3xl font-bold tracking-tight">Employee Directory</h2>
-        <div className="flex gap-2">
-          <Link href="/dashboard/employees/new">
-            <Button className="bg-blue-600 hover:bg-blue-700">Add Employee</Button>
-          </Link>
-          <a
-            href="/api/employees/export"
-            className="bg-green-600 hover:bg-green-700 text-white text-sm px-4 py-2 rounded shadow"
-          >
-            Download Excel
-          </a>
-        </div>
-      </div>
+    <div className="p-6">
+      <h1 className="text-xl font-bold mb-4">Employees</h1>
 
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <Input
-          placeholder="Search by name or employee code..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="w-full md:w-1/2"
-        />
-
-        <div className="flex gap-2 flex-wrap">
-          {["All", "Active", "Inactive", "Serving Notice"].map((status) => (
-            <button
-              key={status}
-              onClick={() => setFilter(status)}
-              className={`px-4 py-1.5 text-sm rounded-full border shadow-sm font-medium transition-all ${
-                filter === status
-                  ? "bg-blue-600 text-white"
-                  : "bg-gray-100 hover:bg-gray-200"
-              }`}
-            >
-              {status}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div className="flex gap-4 flex-wrap">
-        <select
-          value={deptFilter}
-          onChange={(e) => setDeptFilter(e.target.value)}
-          className="border px-3 py-2 rounded-md text-sm shadow"
-        >
-          <option value="">All Departments</option>
-          {departments.map((d) => (
-            <option key={d} value={d}>{d}</option>
-          ))}
+      {/* Add/Edit Form */}
+      <form
+        onSubmit={(e) => handleSubmit(e, editingEmployee?.id)}
+        className="grid grid-cols-3 gap-4 border p-4 mb-6"
+      >
+        <input name="employeeCode" defaultValue={editingEmployee?.employeeCode} placeholder="Employee Code" className="border p-2" required />
+        <input name="name" defaultValue={editingEmployee?.name} placeholder="Name" className="border p-2" required />
+        <input name="doj" type="date" defaultValue={editingEmployee?.doj?.split("T")[0]} className="border p-2" required />
+        <input name="department" defaultValue={editingEmployee?.department} placeholder="Department" className="border p-2" />
+        <input name="designation" defaultValue={editingEmployee?.designation} placeholder="Designation" className="border p-2" />
+        <input name="contactNo" defaultValue={editingEmployee?.contactNo} placeholder="Contact No" className="border p-2" />
+        <input name="email" defaultValue={editingEmployee?.email} placeholder="Email" className="border p-2" />
+        <input name="reportingTo" defaultValue={editingEmployee?.reportingTo} placeholder="Reporting To" className="border p-2" />
+        <select name="status" defaultValue={editingEmployee?.status || "Active"} className="border p-2">
+          <option>Active</option>
+          <option>Inactive</option>
+          <option>Serving Notice</option>
         </select>
+        <input name="location" defaultValue={editingEmployee?.location} placeholder="Location" className="border p-2" />
+        <input name="nationality" defaultValue={editingEmployee?.nationality} placeholder="Nationality" className="border p-2" />
+        <input name="grade" defaultValue={editingEmployee?.grade} placeholder="Grade" className="border p-2" />
+        <input name="personalEmail" defaultValue={editingEmployee?.personalEmail} placeholder="Personal Email" className="border p-2" />
+        <input name="pan" defaultValue={editingEmployee?.pan} placeholder="PAN" className="border p-2" />
+        <input name="aadhar" defaultValue={editingEmployee?.aadhar} placeholder="Aadhar" className="border p-2" />
+        <input name="address" defaultValue={editingEmployee?.address} placeholder="Address" className="border p-2" />
+        <input name="altContactNo" defaultValue={editingEmployee?.altContactNo} placeholder="Alt Contact No" className="border p-2" />
+        <input name="uan" defaultValue={editingEmployee?.uan} placeholder="UAN" className="border p-2" />
+        <input name="fatherName" defaultValue={editingEmployee?.fatherName} placeholder="Father Name" className="border p-2" />
+        <input name="highestEducation" defaultValue={editingEmployee?.highestEducation} placeholder="Highest Education" className="border p-2" />
+        <input name="modeOfSeparation" defaultValue={editingEmployee?.modeOfSeparation} placeholder="Mode of Separation" className="border p-2" />
+        <input name="lwd" type="date" defaultValue={editingEmployee?.lwd?.split("T")[0]} className="border p-2" />
+        <input type="hidden" name="companyId" value="COMPANY_ID_HERE" />
+        <button className="bg-green-500 text-white p-2 col-span-3">
+          {editingEmployee ? "Update Employee" : "Add Employee"}
+        </button>
+      </form>
 
-        <select
-          value={locFilter}
-          onChange={(e) => setLocFilter(e.target.value)}
-          className="border px-3 py-2 rounded-md text-sm shadow"
-        >
-          <option value="">All Locations</option>
-          {locations.map((l) => (
-            <option key={l} value={l}>{l}</option>
-          ))}
-        </select>
-
-        <select
-          value={natFilter}
-          onChange={(e) => setNatFilter(e.target.value)}
-          className="border px-3 py-2 rounded-md text-sm shadow"
-        >
-          <option value="">All Nationalities</option>
-          {nationalities.map((n) => (
-            <option key={n} value={n}>{n}</option>
-          ))}
-        </select>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {filtered.map((e) => (
-          <Card key={e.id} className="border rounded-xl shadow hover:shadow-md transition">
-            <CardContent className="p-5">
-              <div
-                onClick={() => toggleExpand(e.id)}
-                className="cursor-pointer space-y-1 hover:bg-gray-50 rounded-md p-2"
-              >
-                <div className="flex items-center gap-4">
-                  <img
-                    src={e.image}
-                    alt={e.name}
-                    className="w-16 h-16 rounded-full object-cover border"
-                  />
-                  <div className="flex-1">
-                    <div className="flex items-center justify-between">
-                      <h3 className="text-xl font-semibold">{e.name}</h3>
-                      <span className="text-sm text-gray-400">{e.employeeCode}</span>
-                    </div>
-                    <p className="text-sm text-gray-500">{e.email}</p>
-                    <p className="text-sm text-gray-600">{e.department} - {e.designation} - {e.location}</p>
-                    <p className="text-sm text-gray-600">Reporting to: {e.reportingTo}</p>
-                    <span
-                      className={`inline-block mt-1 px-2 py-0.5 text-xs font-medium rounded-full ${
-                        e.status === "Active"
-                          ? "bg-green-100 text-green-700"
-                          : e.status === "Inactive"
-                          ? "bg-red-100 text-red-700"
-                          : "bg-yellow-100 text-yellow-700"
-                      }`}
-                    >
-                      {e.status}
-                    </span>
-                  </div>
-                </div>
+      {/* Employee List */}
+      <ul>
+        {employees.map((emp) => (
+          <li key={emp.id} className="border p-3 mb-2">
+            <div className="flex justify-between">
+              <div>
+                <strong>{emp.employeeCode}</strong> - {emp.name} ({emp.designation}) - {emp.status}
               </div>
+              <div>
+                <button onClick={() => setEditingEmployee(emp)} className="mr-2 text-blue-500">Edit</button>
+                <button onClick={() => handleDelete(emp.id)} className="text-red-500">Delete</button>
+                <button onClick={() => setExpanded(expanded === emp.id ? null : emp.id)} className="ml-2 text-gray-600">
+                  {expanded === emp.id ? "Hide" : "Details"}
+                </button>
+              </div>
+            </div>
 
-              {expanded === e.id && (
-                <div className="mt-4 border-t pt-4 text-sm text-gray-700 space-y-2">
-                  <div><strong>Gender:</strong> {e.gender}</div>
-                  <div><strong>DOJ:</strong> {e.doj}</div>
-                  <div><strong>Grade:</strong> {e.grade}</div>
-                  <div><strong>Personal Email:</strong> {e.personalEmail}</div>
-                  <div><strong>Contact:</strong> {e.contact}</div>
-                  <div><strong>Alternate Contact:</strong> {e.altContact}</div>
-                  <div><strong>Address:</strong> {e.address}</div>
-                  <div><strong>PAN:</strong> {e.pan}</div>
-                  <div><strong>Aadhar:</strong> {e.aadhar}</div>
-                  <div><strong>UAN:</strong> {e.uan}</div>
-                  <div><strong>Father's Name:</strong> {e.fatherName}</div>
-                  <div><strong>Highest Education:</strong> {e.highestEducation}</div>
-                  {e.status === "Inactive" || e.status === "Serving Notice" ? (
-                    <>
-                      <div><strong>Mode of Separation:</strong> {e.modeOfSeparation}</div>
-                      <div><strong>LWD:</strong> {e.lwd}</div>
-                    </>
-                  ) : null}
-
-                  <Link
-                    href={`/dashboard/employees/${e.id}/edit`}
-                    className="text-blue-600 text-sm underline mt-3 inline-block"
-                  >
-                    Edit
-                  </Link>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+            {expanded === emp.id && (
+              <div className="mt-3 grid grid-cols-2 gap-2 text-sm bg-gray-50 p-3 rounded">
+                <p><strong>DOJ:</strong> {emp.doj?.split("T")[0]}</p>
+                <p><strong>Department:</strong> {emp.department}</p>
+                <p><strong>Location:</strong> {emp.location}</p>
+                <p><strong>Nationality:</strong> {emp.nationality}</p>
+                <p><strong>Grade:</strong> {emp.grade}</p>
+                <p><strong>Personal Email:</strong> {emp.personalEmail}</p>
+                <p><strong>PAN:</strong> {emp.pan}</p>
+                <p><strong>Aadhar:</strong> {emp.aadhar}</p>
+                <p><strong>Address:</strong> {emp.address}</p>
+                <p><strong>Alt Contact:</strong> {emp.altContactNo}</p>
+                <p><strong>UAN:</strong> {emp.uan}</p>
+                <p><strong>Father Name:</strong> {emp.fatherName}</p>
+                <p><strong>Education:</strong> {emp.highestEducation}</p>
+                {emp.status !== "Active" && (
+                  <>
+                    <p><strong>Mode of Separation:</strong> {emp.modeOfSeparation}</p>
+                    <p><strong>LWD:</strong> {emp.lwd?.split("T")[0]}</p>
+                  </>
+                )}
+              </div>
+            )}
+          </li>
         ))}
-
-        {filtered.length === 0 && (
-          <p className="text-gray-500 mt-4">No employees found.</p>
-        )}
-      </div>
+      </ul>
     </div>
   );
 }

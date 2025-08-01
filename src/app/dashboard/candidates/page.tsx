@@ -1,249 +1,100 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Card } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
-import { Pencil, Trash2 } from "lucide-react";
-import { supabase } from "@/lib/supabaseClient";
-
-type Candidate = {
-  id: string;
-  name: string;
-  number: string;
-  email: string;
-  jobCode: string;
-  position: string;
-  department: string;
-  status: string;
-  date: string;
-  initiatedBy: string;
-  resume?: string;
-  company_id: string;
-};
+import { useEffect, useState } from "react";
 
 export default function CandidatesPage() {
-  const [candidates, setCandidates] = useState<Candidate[]>([]);
-  const [filter, setFilter] = useState("All");
-  const [search, setSearch] = useState("");
-  const [jobCodeFilter, setJobCodeFilter] = useState("All");
-  const [loading, setLoading] = useState(true);
-  const [uploadingId, setUploadingId] = useState<string | null>(null);
+  const [candidates, setCandidates] = useState<any[]>([]);
+  const [jobs, setJobs] = useState<any[]>([]);
+  const [editingCandidate, setEditingCandidate] = useState<any>(null);
 
-  // Fetch candidates
   useEffect(() => {
-    const fetchCandidates = async () => {
-      setLoading(true);
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      const { data, error } = await supabase
-        .from("candidates")
-        .select("*")
-        .eq("company_id", user.user_metadata.company_id)
-        .order("created_at", { ascending: false });
-
-      if (error) console.error(error);
-      else setCandidates(data || []);
-      setLoading(false);
-    };
-
     fetchCandidates();
+    fetchJobs();
   }, []);
 
-  // Filtering logic
-  const filteredCandidates = candidates.filter((candidate) => {
-    const matchesJob = jobCodeFilter === "All" || candidate.jobCode === jobCodeFilter;
-    const matchesStatus = filter === "All" || candidate.status === filter;
-    const matchesSearch =
-      candidate.name.toLowerCase().includes(search.toLowerCase()) ||
-      candidate.position.toLowerCase().includes(search.toLowerCase()) ||
-      candidate.jobCode.includes(search);
-    return matchesJob && matchesStatus && matchesSearch;
-  });
+  const fetchCandidates = async () => {
+    const res = await fetch("/api/candidates");
+    const data = await res.json();
+    setCandidates(data);
+  };
 
-  // Delete candidate
+  const fetchJobs = async () => {
+    const res = await fetch("/api/jobs");
+    const data = await res.json();
+    setJobs(data);
+  };
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>, id?: string) => {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    const res = await fetch(id ? `/api/candidates/${id}` : "/api/candidates", {
+      method: id ? "PUT" : "POST",
+      body: formData,
+    });
+    if (res.ok) {
+      alert(id ? "Candidate updated!" : "Candidate created!");
+      setEditingCandidate(null);
+      fetchCandidates();
+    }
+  };
+
   const handleDelete = async (id: string) => {
-    await supabase.from("candidates").delete().eq("id", id);
-    setCandidates((prev) => prev.filter((c) => c.id !== id));
+    if (!confirm("Are you sure?")) return;
+    await fetch(`/api/candidates/${id}`, { method: "DELETE" });
+    fetchCandidates();
   };
-
-  // Upload or replace resume
-  const handleResumeUpload = async (file: File, candidateId: string) => {
-    setUploadingId(candidateId);
-
-    const filePath = `resumes/${candidateId}/${file.name}`;
-    const { error: uploadError } = await supabase.storage
-      .from("resumes")
-      .upload(filePath, file, { upsert: true });
-
-    if (uploadError) {
-      console.error(uploadError);
-      alert("Error uploading resume!");
-      setUploadingId(null);
-      return;
-    }
-
-    const { data: { publicUrl } } = supabase.storage.from("resumes").getPublicUrl(filePath);
-
-    const { error } = await supabase
-      .from("candidates")
-      .update({ resume: publicUrl })
-      .eq("id", candidateId);
-
-    if (!error) {
-      setCandidates((prev) =>
-        prev.map((c) => (c.id === candidateId ? { ...c, resume: publicUrl } : c))
-      );
-    } else {
-      console.error(error);
-      alert("Error updating candidate resume URL!");
-    }
-    setUploadingId(null);
-  };
-
-  if (loading) return <p>Loading candidates...</p>;
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-wrap justify-between items-center gap-4">
-        <h1 className="text-2xl font-bold">Candidates</h1>
-        <div className="flex gap-2">
-          <Link
-            href="/dashboard/candidates/new"
-            className="bg-black text-white px-4 py-2 rounded"
-          >
-            Add New Candidate
-          </Link>
-          <a
-            href="/api/candidates/export"
-            className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
-          >
-            Download Excel
-          </a>
-        </div>
-      </div>
+    <div className="p-6">
+      <h1 className="text-xl font-bold mb-4">Candidates</h1>
 
-      {/* Filters */}
-      <div className="flex flex-wrap items-center gap-4">
-        <Input
-          type="text"
-          placeholder="Search by name, role or code..."
-          className="max-w-md"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
-        <select
-          value={jobCodeFilter}
-          onChange={(e) => setJobCodeFilter(e.target.value)}
-          className="border px-3 py-2 rounded"
-        >
-          <option value="All">All Job Codes</option>
-          <option value="012">012</option>
-          <option value="013">013</option>
-          <option value="014">014</option>
+      <form
+        onSubmit={(e) => handleSubmit(e, editingCandidate?.id)}
+        className="grid grid-cols-2 gap-4 border p-4 mb-6"
+      >
+        <input name="name" defaultValue={editingCandidate?.name} placeholder="Full Name" className="border p-2" required />
+        <input name="email" defaultValue={editingCandidate?.email} placeholder="Email" className="border p-2" required />
+        <input name="phone" defaultValue={editingCandidate?.phone} placeholder="Phone" className="border p-2" required />
+        <input name="department" defaultValue={editingCandidate?.department} placeholder="Department" className="border p-2" required />
+        <select name="status" defaultValue={editingCandidate?.status || "Applied"} className="border p-2">
+          <option>Applied</option>
+          <option>Interviewed</option>
+          <option>Hired</option>
+          <option>Rejected</option>
         </select>
-        <div className="flex gap-2">
-          {["All", "Applied", "Interviewed", "Offered", "Hired", "Rejected"].map(
-            (status) => (
-              <Button
-                key={status}
-                variant={filter === status ? "default" : "outline"}
-                onClick={() => setFilter(status)}
-              >
-                {status}
-              </Button>
-            )
-          )}
-        </div>
-      </div>
+        <select name="jobId" defaultValue={editingCandidate?.jobId} className="border p-2">
+          <option value="">Select Job</option>
+          {jobs.map((job) => (
+            <option key={job.id} value={job.id}>
+              {job.title} ({job.code})
+            </option>
+          ))}
+        </select>
+        <input type="file" name="resume" className="border p-2 col-span-2" />
+        <input type="hidden" name="companyId" value="COMPANY_ID_HERE" />
+        <button className="bg-blue-500 text-white p-2 col-span-2">
+          {editingCandidate ? "Update Candidate" : "Add Candidate"}
+        </button>
+      </form>
 
-      {/* Candidate Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {filteredCandidates.map((candidate) => (
-          <Card
-            key={candidate.id}
-            className="p-5 space-y-2 rounded-xl shadow border bg-gradient-to-br from-white to-gray-50 hover:scale-[1.01] transition-transform"
-          >
-            <div className="flex justify-between items-start">
-              <div>
-                <h2 className="text-lg font-semibold text-blue-800">{candidate.name}</h2>
-                <p className="text-sm text-gray-600">{candidate.email}</p>
-                <p className="text-sm text-gray-600">{candidate.number}</p>
-              </div>
-              <div className="flex gap-2">
-                <Button variant="outline" size="icon" asChild>
-                  <Link href={`/dashboard/candidates/${candidate.id}/edit`}>
-                    <Pencil className="w-4 h-4" />
-                  </Link>
-                </Button>
-                <Button
-                  variant="destructive"
-                  size="icon"
-                  onClick={() => handleDelete(candidate.id)}
-                >
-                  <Trash2 className="w-4 h-4" />
-                </Button>
-              </div>
-            </div>
-
-            <div className="text-sm text-gray-700 grid grid-cols-2 gap-x-4 gap-y-1">
-              <div><strong>Job Code:</strong> {candidate.jobCode}</div>
-              <div><strong>Position:</strong> {candidate.position}</div>
-              <div><strong>Department:</strong> {candidate.department}</div>
-              <div><strong>Status:</strong> {candidate.status}</div>
-              <div><strong>Date:</strong> {candidate.date}</div>
-              <div className="col-span-2"><strong>Initiated by:</strong> {candidate.initiatedBy}</div>
-            </div>
-
-            {/* Resume Upload/Replace */}
-            <div className="pt-2 border-t mt-2 space-y-2">
-              <Label htmlFor={`resume-${candidate.id}`}>Resume:</Label>
-              {candidate.resume ? (
-                <div className="flex flex-col gap-2">
-                  <a
-                    href={candidate.resume}
-                    target="_blank"
-                    className="text-blue-600 underline"
-                  >
-                    View Current Resume
-                  </a>
-                  <Input
-                    type="file"
-                    id={`resume-${candidate.id}`}
-                    className="mt-1"
-                    onChange={(e) => {
-                      if (e.target.files?.[0])
-                        handleResumeUpload(e.target.files[0], candidate.id);
-                    }}
-                  />
-                  {uploadingId === candidate.id && (
-                    <p className="text-sm text-gray-500">Uploading...</p>
-                  )}
-                </div>
-              ) : (
-                <>
-                  <Input
-                    type="file"
-                    id={`resume-${candidate.id}`}
-                    className="mt-1"
-                    onChange={(e) => {
-                      if (e.target.files?.[0])
-                        handleResumeUpload(e.target.files[0], candidate.id);
-                    }}
-                  />
-                  {uploadingId === candidate.id && (
-                    <p className="text-sm text-gray-500">Uploading...</p>
-                  )}
-                </>
+      <ul>
+        {candidates.map((cand) => (
+          <li key={cand.id} className="border p-3 mb-2 flex justify-between">
+            <div>
+              <strong>{cand.name}</strong> - {cand.status} ({cand.job?.title || "No Job"})
+              {cand.resumeUrl && (
+                <a href={cand.resumeUrl} target="_blank" rel="noreferrer" className="ml-2 text-blue-500">
+                  View Resume
+                </a>
               )}
             </div>
-          </Card>
+            <div>
+              <button onClick={() => setEditingCandidate(cand)} className="mr-2 text-blue-500">Edit</button>
+              <button onClick={() => handleDelete(cand.id)} className="text-red-500">Delete</button>
+            </div>
+          </li>
         ))}
-      </div>
+      </ul>
     </div>
   );
 }

@@ -1,20 +1,52 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
-generator client {
-  provider = "prisma-client-js"
+model Company {
+  id         String       @id @default(cuid())
+  name       String
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+  users      User[]
+  jobs       Job[]
+  candidates Candidate[]
+  employees  Employee[]
+  logs       ActivityLog[]
+}
+
+model User {
+  id          String    @id @default(cuid())
+  authId      String    @unique               // Supabase Auth user.id
+  email       String    @unique
+  name        String
+  role        String                      // Admin, HR, Recruiter
+  companyId   String
+  company     Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 }
 
 model Job {
-  id          String       @id @default(cuid())
-  title       String
-  code        String       @unique
-  department  String
-  description String?
-  createdAt   DateTime     @default(now())
-  candidates  Candidate[]
+  id                String       @id @default(cuid())
+  title             String
+  code              String       @unique
+  department        String
+  description       String?
+  vacancy           Int
+  status            String        // Open, Closed, Hold
+  initiatedBy       String?
+  jdUrl             String?       // Job Description file
+  supportingDocUrl  String?       // Supporting document file
+  companyId         String
+  company           Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+  candidates        Candidate[]
 }
 
 model Candidate {
@@ -22,12 +54,16 @@ model Candidate {
   name        String
   email       String
   phone       String
-  jobCode     String
+  jobId       String
+  position    String?    
   status      String
   resumeUrl   String?
   initiatedBy String?
-  createdAt   DateTime @default(now())
-  job         Job      @relation(fields: [jobCode], references: [code])
+  companyId   String
+  company     Company    @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  job         Job        @relation(fields: [jobId], references: [id], onDelete: Cascade)
 }
 
 model Employee {
@@ -51,5 +87,17 @@ model Employee {
   education        String?
   modeOfSeparation String?
   lastWorkingDay   DateTime?
-  createdAt        DateTime @default(now())
+  companyId        String
+  company          Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+}
+
+model ActivityLog {
+  id          String    @id @default(cuid())
+  action      String
+  performedBy String
+  companyId   String
+  company     Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  createdAt   DateTime  @default(now())
 }
