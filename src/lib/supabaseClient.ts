@@ -1,6 +1,13 @@
-// lib/supabaseClient.ts
+// src/lib/supabaseClient.ts
 import { createBrowserClient } from "@supabase/ssr";
 
+// Single shared client
+export const supabase = createBrowserClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+);
+
+// Utility to create a fresh client
 export function createClient() {
   return createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
