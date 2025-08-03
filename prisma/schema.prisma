@@ -8,45 +8,45 @@ datasource db {
 }
 
 model Company {
-  id         String       @id @default(cuid())
+  id         String        @id @default(cuid())
   name       String
-  createdAt  DateTime     @default(now())
-  updatedAt  DateTime     @updatedAt
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
   users      User[]
   jobs       Job[]
-  candidates Candidate[]
+  candidates Candidate[]   @relation("CompanyCandidates")
   employees  Employee[]
   logs       ActivityLog[]
 }
 
 model User {
-  id          String    @id @default(cuid())
-  authId      String    @unique               // Supabase Auth user.id
-  email       String    @unique
-  name        String
-  role        String                      // Admin, HR, Recruiter
-  companyId   String
-  company     Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  id        String   @id @default(cuid())
+  authId    String   @unique // Supabase Auth user.id
+  email     String   @unique
+  name      String
+  role      String // Admin, HR, Recruiter
+  companyId String
+  company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Job {
-  id                String       @id @default(cuid())
-  title             String
-  code              String       @unique
-  department        String
-  description       String?
-  vacancy           Int
-  status            String        // Open, Closed, Hold
-  initiatedBy       String?
-  jdUrl             String?       // Job Description file
-  supportingDocUrl  String?       // Supporting document file
-  companyId         String
-  company           Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  createdAt         DateTime      @default(now())
-  updatedAt         DateTime      @updatedAt
-  candidates        Candidate[]
+  id               String      @id @default(cuid())
+  title            String
+  code             String      @unique
+  department       String
+  description      String?
+  vacancy          Int
+  status           String // Open, Closed, Hold
+  initiatedBy      String?
+  jdUrl            String? // Job Description file
+  supportingDocUrl String? // Supporting document file
+  companyId        String
+  company          Company     @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+  candidates       Candidate[] @relation("JobCandidates")
 }
 
 model Candidate {
@@ -54,21 +54,22 @@ model Candidate {
   name        String
   email       String
   phone       String
-  jobId       String
-  position    String?    
+  position    String?
   status      String
   resumeUrl   String?
   initiatedBy String?
+  department  String
   companyId   String
-  company     Company    @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
-  job         Job        @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  jobId       String?
+  company     Company  @relation("CompanyCandidates", fields: [companyId], references: [id], onDelete: Cascade)
+  job         Job?     @relation("JobCandidates", fields: [jobId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
 
 model Employee {
-  id               String   @id @default(cuid())
-  employeeCode     String   @unique
+  id               String    @id @default(cuid())
+  employeeCode     String    @unique
   name             String
   email            String
   phone            String
@@ -94,10 +95,10 @@ model Employee {
 }
 
 model ActivityLog {
-  id          String    @id @default(cuid())
+  id          String   @id @default(cuid())
   action      String
   performedBy String
   companyId   String
-  company     Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  createdAt   DateTime  @default(now())
+  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
 }
