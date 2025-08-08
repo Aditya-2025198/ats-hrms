@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { createClient } from "@/lib/supabaseClient";
 import { useRouter } from "next/navigation";
 
@@ -9,26 +9,12 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const router = useRouter();
   const [error, setError] = useState("");
-  const supabase = createClient(); // Create the client once
-
-  useEffect(() => {
-    // This is the key change. We listen for auth state changes.
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        // If a session exists and we haven't already redirected, go to dashboard.
-        if (session) {
-          router.push("/dashboard");
-        }
-      }
-    );
-
-    return () => subscription.unsubscribe(); // Clean up the subscription
-  }, [router, supabase]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
 
+    const supabase = createClient();
     const { error } = await supabase.auth.signInWithPassword({
       email,
       password,
@@ -36,8 +22,9 @@ export default function LoginPage() {
 
     if (error) {
       setError(error.message);
-    } 
-    // We no longer redirect here. The useEffect hook will handle it.
+    } else {
+      router.push("/dashboard");
+    }
   };
 
   return (
