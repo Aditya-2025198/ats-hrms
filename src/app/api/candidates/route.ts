@@ -1,4 +1,3 @@
-// src/app/api/candidates/route.ts
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { createClient } from "@/lib/supabaseClient";
@@ -13,15 +12,23 @@ export async function GET() {
     return NextResponse.json(candidates);
   } catch (error) {
     console.error(error);
-    return NextResponse.json({ error: "Failed to fetch candidates" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Failed to fetch candidates" },
+      { status: 500 }
+    );
   }
 }
 
 export async function POST(req: Request) {
   try {
     const supabase = createClient();
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+
+    if (!session) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
 
     const formData = await req.formData();
     const name = formData.get("name") as string;
@@ -35,13 +42,19 @@ export async function POST(req: Request) {
 
     // Resume upload
     const resumeFile = formData.get("resume") as File | null;
-    let resumeUrl = null;
+    let resumeUrl: string | null = null;
 
     if (resumeFile && resumeFile.size > 0) {
       const { data, error } = await supabase.storage
         .from("candidates")
-        .upload(`resumes/${uuidv4()}-${resumeFile.name}`, resumeFile, { upsert: true });
+        .upload(
+          `resumes/${uuidv4()}-${resumeFile.name}`,
+          resumeFile,
+          { upsert: true }
+        );
+
       if (error) throw error;
+
       resumeUrl = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/candidates/${data.path}`;
     }
 
@@ -50,18 +63,21 @@ export async function POST(req: Request) {
         name,
         email,
         phone,
-        department,
         status,
         jobId,
         companyId,
         initiatedBy,
         resumeUrl,
+        department, // Only if this field exists in your Prisma schema
       },
     });
 
     return NextResponse.json(candidate);
   } catch (error) {
     console.error(error);
-    return NextResponse.json({ error: "Failed to create candidate" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Failed to create candidate" },
+      { status: 500 }
+    );
   }
 }

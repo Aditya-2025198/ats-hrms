@@ -1,4 +1,3 @@
-// src/app/api/jobs/route.ts
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { createClient } from "@/lib/supabaseClient";
@@ -18,8 +17,13 @@ export async function GET() {
 export async function POST(req: Request) {
   try {
     const supabase = createClient();
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+
+    if (!session) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
 
     const formData = await req.formData();
     const title = formData.get("title") as string;
@@ -34,8 +38,8 @@ export async function POST(req: Request) {
     // Upload files to Supabase
     const jdFile = formData.get("jdFile") as File | null;
     const supportingFile = formData.get("supportingFile") as File | null;
-    let jdUrl = null;
-    let supportingDocUrl = null;
+    let jdUrl: string | null = null;
+    let supportingDocUrl: string | null = null;
 
     if (jdFile && jdFile.size > 0) {
       const { data, error } = await supabase.storage
