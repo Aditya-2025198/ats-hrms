@@ -9,24 +9,34 @@ const DashboardCharts = dynamic(() => import("@/components/DashboardCharts"), { 
 export default function DashboardHome() {
   const [loading, setLoading] = useState(true);
   const [chartData, setChartData] = useState<any>(null);
-  const [kpis, setKpis] = useState({ totalCandidates: 0, totalJobs: 0, hired: 0, activeJobs: 0 });
+  const [weeklyJobs, setWeeklyJobs] = useState([]);
+  const [kpis, setKpis] = useState({
+    totalCandidates: 0,
+    totalJobs: 0,
+    hired: 0,
+    activeJobs: 0
+  });
 
   useEffect(() => {
     const fetchData = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
+      const companyId = user.user_metadata.company_id;
+
+      // Fetch candidates
       const { data: candidates } = await supabase
         .from("candidates")
-        .select("status")
-        .eq("company_id", user.user_metadata.company_id);
+        .select("status, created_at")
+        .eq("company_id", companyId);
 
+      // Fetch jobs
       const { data: jobs } = await supabase
         .from("jobs")
-        .select("status")
-        .eq("company_id", user.user_metadata.company_id);
+        .select("status, created_at")
+        .eq("company_id", companyId);
 
-      // Group counts
+      // Aggregate counts
       const candidateCounts = candidates?.reduce((acc: any, c: any) => {
         acc[c.status] = (acc[c.status] || 0) + 1;
         return acc;
@@ -37,15 +47,44 @@ export default function DashboardHome() {
         return acc;
       }, {}) || {};
 
-      // KPIs
       setKpis({
         totalCandidates: candidates?.length || 0,
         totalJobs: jobs?.length || 0,
         hired: candidateCounts["Hired"] || 0,
-        activeJobs: jobCounts["Open"] || 0,
+        activeJobs: jobCounts["Open"] || 0
       });
 
-      setChartData({ candidates: candidateCounts, jobs: jobCounts });
+      // Weekly jobs for bar chart
+      const days = ["Mon", "Tue", "Wed", "Thu", "Fri"];
+      const counts = days.map((day) => ({ day, jobs: 0 }));
+
+      const today = new Date();
+      const startOfWeek = new Date(today);
+      startOfWeek.setDate(today.getDate() - today.getDay() + 1); // Monday
+      startOfWeek.setHours(0, 0, 0, 0);
+
+      const endOfWeek = new Date(startOfWeek);
+      endOfWeek.setDate(startOfWeek.getDate() + 4); // Friday
+      endOfWeek.setHours(23, 59, 59, 999);
+
+      jobs?.forEach((job) => {
+        const jobDate = new Date(job.created_at);
+        if (jobDate >= startOfWeek && jobDate <= endOfWeek) {
+          const dayIndex = jobDate.getDay() - 1; // Monday=0
+          if (dayIndex >= 0 && dayIndex < 5) {
+            counts[dayIndex].jobs += 1;
+          }
+        }
+      });
+
+      setWeeklyJobs(counts);
+
+      // Send candidate + job counts to chart
+      setChartData({
+        candidates: candidateCounts,
+        jobs: jobCounts
+      });
+
       setLoading(false);
     };
 
@@ -80,8 +119,7 @@ export default function DashboardHome() {
       </div>
 
       {/* Charts */}
-      <DashboardCharts data={chartData} />
+      <DashboardCharts data={chartData} weeklyJobs={weeklyJobs} />
     </div>
   );
 }
-          

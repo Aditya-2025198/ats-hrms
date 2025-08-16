@@ -12,23 +12,23 @@ model Company {
   name       String
   createdAt  DateTime      @default(now())
   updatedAt  DateTime      @updatedAt
-  users      User[]
-  jobs       Job[]
+  logs       ActivityLog[]
   candidates Candidate[]   @relation("CompanyCandidates")
   employees  Employee[]
-  logs       ActivityLog[]
+  jobs       Job[]
+  users      User[]
 }
 
 model User {
   id        String   @id @default(cuid())
-  authId    String   @unique // Supabase Auth user.id
   email     String   @unique
   name      String
-  role      String // Admin, HR, Recruiter
+  role      String
   companyId String
-  company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  authId    String   @unique
+  company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
 }
 
 model Job {
@@ -38,15 +38,15 @@ model Job {
   department       String
   description      String?
   vacancy          Int
-  status           String // Open, Closed, Hold
+  status           String
   initiatedBy      String?
-  jdUrl            String? // Job Description file
-  supportingDocUrl String? // Supporting document file
+  jdUrl            String?
+  supportingDocUrl String?
   companyId        String
-  company          Company     @relation(fields: [companyId], references: [id], onDelete: Cascade)
   createdAt        DateTime    @default(now())
   updatedAt        DateTime    @updatedAt
   candidates       Candidate[] @relation("JobCandidates")
+  company          Company     @relation(fields: [companyId], references: [id], onDelete: Cascade)
 }
 
 model Candidate {
@@ -58,13 +58,13 @@ model Candidate {
   status      String
   resumeUrl   String?
   initiatedBy String?
-  department  String
   companyId   String
-  jobId       String?
-  company     Company  @relation("CompanyCandidates", fields: [companyId], references: [id], onDelete: Cascade)
-  job         Job?     @relation("JobCandidates", fields: [jobId], references: [id], onDelete: Cascade)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+  jobId       String?
+  department  String
+  company     Company  @relation("CompanyCandidates", fields: [companyId], references: [id], onDelete: Cascade)
+  job         Job?     @relation("JobCandidates", fields: [jobId], references: [id], onDelete: Cascade)
 }
 
 model Employee {
@@ -89,9 +89,9 @@ model Employee {
   modeOfSeparation String?
   lastWorkingDay   DateTime?
   companyId        String
-  company          Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
+  company          Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
 }
 
 model ActivityLog {
@@ -99,6 +99,6 @@ model ActivityLog {
   action      String
   performedBy String
   companyId   String
-  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
   createdAt   DateTime @default(now())
+  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
 }
