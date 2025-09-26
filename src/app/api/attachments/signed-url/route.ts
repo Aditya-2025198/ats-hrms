@@ -1,10 +1,6 @@
+// app/api/attachments/signed-url/route.ts
 import { NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY! // needs service role for signed URLs
-);
+import { supabaseServer } from "@/lib/supabaseServerClient";
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
@@ -15,7 +11,7 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: "Missing objectKey" }, { status: 400 });
   }
 
-  const { data, error } = await supabase.storage
+  const { data, error } = await supabaseServer.storage
     .from("attachments")
     .createSignedUrl(objectKey, expires);
 
