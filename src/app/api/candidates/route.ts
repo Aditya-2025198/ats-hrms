@@ -5,9 +5,9 @@ import { v4 as uuidv4 } from "uuid";
 
 export async function GET() {
   try {
-    const candidates = await prisma.candidate.findMany({
-      orderBy: { createdAt: "desc" },
-      include: { job: true },
+    const candidates = await prisma.candidates.findMany({
+      orderBy: { created_at: "desc" },
+      include: { jobs: true },
     });
     return NextResponse.json(candidates);
   } catch (error) {
@@ -58,17 +58,15 @@ export async function POST(req: Request) {
       resumeUrl = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/candidates/${data.path}`;
     }
 
-    const candidate = await prisma.candidate.create({
+    const candidate = await prisma.candidates.create({
       data: {
         name,
         email,
         phone,
         status,
-        jobId,
-        companyId,
-        initiatedBy,
-        resumeUrl,
-        department, // Only if this field exists in your Prisma schema
+        company_id: companyId,
+        resume_url: resumeUrl,
+        job_code: jobId, // Added required job_code property
       },
     });
 

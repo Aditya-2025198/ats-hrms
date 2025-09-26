@@ -1,15 +1,23 @@
+// prisma/seed.ts
 import { PrismaClient } from "@prisma/client";
+
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log("Database seeded successfully (no demo data).");
-  // You can add initial setup here later if needed (e.g., create a super admin)
+  console.log("🌱 Database seed started...");
+
+  // Optionally: Insert only system-level defaults if needed
+  // Example: an initial company or config
+  // const company = await prisma.company.create({
+  //   data: { name: "Default Company" },
+  // });
+
+  console.log("✅ No demo data inserted. Database ready.");
 }
 
 main()
-  .then(() => console.log("Seeding complete."))
-  .catch((e) => {
-    console.error("Error seeding database:", e);
+  .catch(async (e) => {
+    console.error(e);
     process.exit(1);
   })
   .finally(async () => {
