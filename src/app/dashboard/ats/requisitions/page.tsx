@@ -334,7 +334,7 @@ export default function RequisitionsPage() {
                         type="text"
                         className="border p-2 rounded-lg w-full focus:ring-2 focus:ring-blue-500"
                         value={String(editData.salary_range ?? "")}
-                        onChange={(e) => setEditData({ ...editData, salary_range: e.target.value })}
+                        onChange={(e) => setEditData({ ...editData, salary: e.target.value })}
                       />
                     </div>
 
@@ -345,7 +345,7 @@ export default function RequisitionsPage() {
                         className="border p-2 rounded-lg w-full focus:ring-2 focus:ring-blue-500"
                         value={String(editData.experience_required ?? "")}
                         onChange={(e) =>
-                          setEditData({ ...editData, experience_required: e.target.value })
+                          setEditData({ ...editData, experience: e.target.value })
                         }
                       />
                     </div>
