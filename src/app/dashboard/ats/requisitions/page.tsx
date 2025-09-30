@@ -333,7 +333,7 @@ export default function RequisitionsPage() {
                       <input
                         type="text"
                         className="border p-2 rounded-lg w-full focus:ring-2 focus:ring-blue-500"
-                        value={String(editData.salary_range ?? "")}
+                        value={String(editData.salary ?? "")}
                         onChange={(e) => setEditData({ ...editData, salary: e.target.value })}
                       />
                     </div>
@@ -343,7 +343,7 @@ export default function RequisitionsPage() {
                       <input
                         type="text"
                         className="border p-2 rounded-lg w-full focus:ring-2 focus:ring-blue-500"
-                        value={String(editData.experience_required ?? "")}
+                        value={String(editData.experience ?? "")}
                         onChange={(e) =>
                           setEditData({ ...editData, experience: e.target.value })
                         }
