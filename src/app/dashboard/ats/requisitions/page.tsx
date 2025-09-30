@@ -27,8 +27,8 @@ export interface Requisition {
   is_edited?: boolean | null;
   priority?: string | null;
   employment_type?: string | null;
-  salary_range?: string | null;
-  experience_required?: string | null;
+  salary?: string | null;
+  experience?: string | null;
   description?: string | null;
   initiated_by?: string | null;
 }
