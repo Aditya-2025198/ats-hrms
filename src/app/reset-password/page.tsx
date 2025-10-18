@@ -9,31 +9,25 @@ export default function ResetPasswordPage() {
   const [password, setPassword] = useState('');
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
-  const [ready, setReady] = useState(false); // ✅ ensure hook runs client-side
+  const [sessionReady, setSessionReady] = useState(false);
+
   const searchParams = useSearchParams();
   const router = useRouter();
 
   useEffect(() => {
-    // Only run on client
-    setReady(true);
-  }, []);
-
-  useEffect(() => {
-    if (!ready) return;
-
-    const supabase = createClient();
     const access_token = searchParams.get('access_token');
-    const refresh_token = searchParams.get('refresh_token');
-
-    if (!access_token || !refresh_token) {
+    if (!access_token) {
       setError('Invalid or expired reset link.');
       return;
     }
 
+    const supabase = createClient();
+    // Only need access_token for reset flow
     supabase.auth
-      .setSession({ access_token, refresh_token })
+      .setSession({ access_token })
+      .then(() => setSessionReady(true))
       .catch((err) => setError(err.message));
-  }, [ready, searchParams]);
+  }, [searchParams]);
 
   const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -50,7 +44,7 @@ export default function ResetPasswordPage() {
     }
   };
 
-  if (!ready) return null; // prevents SSR pre-render issues
+  if (!sessionReady) return null; // Wait until session is set
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100">
@@ -69,7 +63,10 @@ export default function ResetPasswordPage() {
               required
               className="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
-            <button className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700">
+            <button
+              type="submit"
+              className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700"
+            >
               Update Password
             </button>
           </form>
