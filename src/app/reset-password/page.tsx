@@ -15,6 +15,9 @@ export default function ResetPasswordPage() {
   const router = useRouter();
 
   useEffect(() => {
+    // Make sure this runs only on client
+    if (!searchParams) return;
+
     const access_token = searchParams.get('access_token');
     if (!access_token) {
       setError('Invalid or expired reset link.');
@@ -22,7 +25,7 @@ export default function ResetPasswordPage() {
     }
 
     const supabase = createClient();
-    // Only need access_token for reset flow
+
     supabase.auth
       .setSession({ access_token })
       .then(() => setSessionReady(true))
@@ -44,7 +47,8 @@ export default function ResetPasswordPage() {
     }
   };
 
-  if (!sessionReady) return null; // Wait until session is set
+  // Render nothing until session is ready (prevents prerender errors)
+  if (!sessionReady) return null;
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100">
