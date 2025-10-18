@@ -1,5 +1,6 @@
 'use client';
 export const dynamic = 'force-dynamic';
+
 import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabaseClient';
@@ -8,10 +9,18 @@ export default function ResetPasswordPage() {
   const [password, setPassword] = useState('');
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+  const [ready, setReady] = useState(false); // ✅ ensure hook runs client-side
   const searchParams = useSearchParams();
   const router = useRouter();
 
   useEffect(() => {
+    // Only run on client
+    setReady(true);
+  }, []);
+
+  useEffect(() => {
+    if (!ready) return;
+
     const supabase = createClient();
     const access_token = searchParams.get('access_token');
     const refresh_token = searchParams.get('refresh_token');
@@ -21,11 +30,10 @@ export default function ResetPasswordPage() {
       return;
     }
 
-    // Set the session using both tokens
-    supabase.auth.setSession({ access_token, refresh_token }).catch((err) => {
-      setError(err.message);
-    });
-  }, [searchParams]);
+    supabase.auth
+      .setSession({ access_token, refresh_token })
+      .catch((err) => setError(err.message));
+  }, [ready, searchParams]);
 
   const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -41,6 +49,8 @@ export default function ResetPasswordPage() {
       setTimeout(() => router.push('/login'), 2000);
     }
   };
+
+  if (!ready) return null; // prevents SSR pre-render issues
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100">
