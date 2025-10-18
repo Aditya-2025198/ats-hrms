@@ -1,5 +1,4 @@
 'use client';
-export const dynamic = 'force-dynamic';
 
 import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -9,26 +8,26 @@ export default function ResetPasswordPage() {
   const [password, setPassword] = useState('');
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
-  const [sessionReady, setSessionReady] = useState(false);
+  const [ready, setReady] = useState(false);
 
-  const searchParams = useSearchParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   useEffect(() => {
-    // Make sure this runs only on client
     if (!searchParams) return;
 
     const access_token = searchParams.get('access_token');
+    const refresh_token = searchParams.get('refresh_token');
+
     if (!access_token) {
       setError('Invalid or expired reset link.');
       return;
     }
 
     const supabase = createClient();
-
     supabase.auth
-      .setSession({ access_token })
-      .then(() => setSessionReady(true))
+      .setSession({ access_token, refresh_token: refresh_token || undefined })
+      .then(() => setReady(true))
       .catch((err) => setError(err.message));
   }, [searchParams]);
 
@@ -47,8 +46,7 @@ export default function ResetPasswordPage() {
     }
   };
 
-  // Render nothing until session is ready (prevents prerender errors)
-  if (!sessionReady) return null;
+  if (!ready && !error) return <p className="text-center mt-10">Loading...</p>;
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100">
