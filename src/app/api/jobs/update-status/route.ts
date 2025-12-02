@@ -18,6 +18,6 @@ export async function POST(req: Request) {
     return NextResponse.json({ success: true, job: updatedJob });
   } catch (err: any) {
     console.error("Update job status error:", err);
-    return NextResponse.json({ success: false, error: err.message }, { status: 500 });
+    return NextResponse.json({ success: false, error: "Not authorized to update job status." }, { status: 500 });
   }
 }
