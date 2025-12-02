@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect, useState } from "react";
+import { createClient } from "@/lib/supabaseClient";
 import {
   Card,
   CardContent,
@@ -19,222 +21,263 @@ import {
   CartesianGrid,
 } from "recharts";
 
+interface Candidate {
+  id: number;
+  company_id: string;
+  job_code: string;
+  name: string;
+  status: string;
+  interviewed_date?: string | null;
+  hired_date?: string | null;
+  created_at: string;
+}
+
+interface Job {
+  id: number;
+  company_id: string;
+  department: string;
+  status: string;
+  openings: number;
+}
+
+interface Requisition {
+  id: number;
+  company_id: string;
+  client_name: string;
+}
+
 export default function DashboardPage() {
-  // Dummy data (replace later with DB/API)
-  const departmentData = [
-    { name: "Products", value: 70 },
-    { name: "Engineering", value: 30 },
-  ];
+  const supabase = createClient();
+  const [candidates, setCandidates] = useState<Candidate[]>([]);
+  const [jobs, setJobs] = useState<Job[]>([]);
+  const [requisitions, setRequisitions] = useState<Requisition[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const sourceData = [
-    { name: "LinkedIn", value: 40 },
-    { name: "Referral", value: 25 },
-    { name: "Website", value: 20 },
-    { name: "Other", value: 15 },
-  ];
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true);
+      try {
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+        if (!session) return;
 
-  const funnelData = [
-    { stage: "Applied", value: 180 },
-    { stage: "Interview", value: 167 },
-    { stage: "Shortlisted", value: 18 },
-    { stage: "Offer", value: 12 },
-    { stage: "Hired", value: 5 },
-  ];
+        // Get company_id
+        const { data: profileData, error: profileError } = await supabase
+          .from("profiles")
+          .select("company_id")
+          .eq("id", session.user.id)
+          .single();
+        if (profileError || !profileData) throw new Error("Profile not found");
+        const companyId = profileData.company_id;
 
-  const COLORS = ["#3B82F6", "#1E40AF", "#6366F1", "#0EA5E9"];
+        // Fetch candidates
+        const { data: candidatesData, error: candidatesError } = await supabase
+          .from("candidates")
+          .select("*")
+          .eq("company_id", companyId);
+        if (candidatesError) throw candidatesError;
+
+        // Fetch jobs
+        const { data: jobsData, error: jobsError } = await supabase
+          .from("jobs")
+          .select("*")
+          .eq("company_id", companyId);
+        if (jobsError) throw jobsError;
+
+        // Fetch requisitions
+        const { data: requisitionsData, error: requisitionsError } =
+          await supabase
+            .from("requisitions")
+            .select("*")
+            .eq("company_id", companyId);
+        if (requisitionsError) throw requisitionsError;
+
+        setCandidates(candidatesData || []);
+        setJobs(jobsData || []);
+        setRequisitions(requisitionsData || []);
+      } catch (err) {
+        console.error("Error fetching dashboard data:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [supabase]);
+
+  if (loading)
+    return (
+      <p className="text-center text-gray-500 mt-20">
+        Loading dashboard data...
+      </p>
+    );
+
+  // --- KPI Calculations ---
+  const totalApplicants = candidates.length;
+  const openPositions = jobs.filter((j) => j.status === "Open").length;
+  const shortlistedApplicants = candidates.filter(
+    (c) => c.status === "Shortlisted"
+  ).length;
+  const interviewScheduled = candidates.filter(
+    (c) =>
+      c.interviewed_date &&
+      new Date(c.interviewed_date) > new Date()
+  ).length;
+
+  const hired = candidates.filter((c) => c.status === "Hired").length;
+  const offered = candidates.filter(
+    (c) => c.status === "Offered" || c.status === "Hired"
+  ).length;
+  const interviewed = candidates.filter((c) => c.interviewed_date).length;
+
+  const selectionRatio =
+    totalApplicants > 0 ? ((hired / totalApplicants) * 100).toFixed(2) + "%" : "0%";
+  const successRatio =
+    interviewed > 0 ? ((hired / interviewed) * 100).toFixed(2) + "%" : "0%";
+
+  const pendingInterviews = candidates.filter(
+    (c) =>
+      c.interviewed_date &&
+      new Date(c.interviewed_date) > new Date()
+  ).length;
+  const pendingFeedback = candidates.filter(
+    (c) =>
+      c.interviewed_date &&
+      new Date(c.interviewed_date) < new Date() &&
+      c.status !== "Hired"
+  ).length;
+
+  const offerAcceptanceRatio =
+    offered > 0 ? ((hired / offered) * 100).toFixed(2) + "%" : "0%";
+
+  // Average Time to Hire
+  const hiredCandidates = candidates.filter(
+    (c) => c.status === "Hired" && c.hired_date
+  );
+  const totalTTHDays = hiredCandidates.reduce((acc, c) => {
+    const applied = new Date(c.created_at).getTime();
+    const hiredDate = new Date(c.hired_date!).getTime();
+    return acc + Math.ceil(Math.abs(hiredDate - applied) / (1000 * 60 * 60 * 24));
+  }, 0);
+  const avgTimeToHire =
+    hiredCandidates.length > 0
+      ? Math.round(totalTTHDays / hiredCandidates.length) + " days"
+      : "N/A";
+
+  // Charts Data
+  const COLORS = ["#3B82F6", "#1E40AF", "#6366F1", "#0EA5E9", "#F59E0B"];
+
+  const departmentChartData = jobs.reduce<Record<string, number>>((acc, j) => {
+    if (j.status === "Open") {
+      acc[j.department] = (acc[j.department] || 0) + 1;
+    }
+    return acc;
+  }, {});
+  const departmentData = Object.entries(departmentChartData).map(
+    ([name, value]) => ({ name, value })
+  );
+
+  const requisitionsData = requisitions.reduce<Record<string, number>>(
+    (acc, r) => {
+      acc[r.client_name] = (acc[r.client_name] || 0) + 1;
+      return acc;
+    },
+    {}
+  );
+  const requisitionChartData = Object.entries(requisitionsData).map(
+    ([name, value]) => ({ name, value })
+  );
+
+  const funnelStages = ["Applied", "Interviewed", "Shortlisted", "Offered", "Hired"];
+  const funnelData = funnelStages.map((stage) => ({
+    stage,
+    value: candidates.filter((c) => c.status === stage).length,
+  }));
 
   return (
     <div className="space-y-6">
       {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="p-4 text-center">
-            <p className="text-gray-500 text-sm">Open Position</p>
-            <p className="text-2xl font-bold">5</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4 text-center">
-            <p className="text-gray-500 text-sm">Total Applicants</p>
-            <p className="text-2xl font-bold">180</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4 text-center">
-            <p className="text-gray-500 text-sm">Interview Scheduled</p>
-            <p className="text-2xl font-bold">167</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4 text-center">
-            <p className="text-gray-500 text-sm">Shortlisted Applicants</p>
-            <p className="text-2xl font-bold">18</p>
-          </CardContent>
-        </Card>
+        <KpiCard title="Open Position" value={openPositions} />
+        <KpiCard title="Total Applicants" value={totalApplicants} />
+        <KpiCard title="Interview Scheduled" value={interviewScheduled} />
+        <KpiCard title="Shortlisted Applicants" value={shortlistedApplicants} />
       </div>
 
-      {/* Second Row KPI */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="p-4 text-center">
-            <p className="text-gray-500 text-sm">Selection Ratio</p>
-            <p className="text-2xl font-bold">6.23%</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4 text-center">
-            <p className="text-gray-500 text-sm">Pending Interviews</p>
-            <p className="text-2xl font-bold">111</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4 text-center">
-            <p className="text-gray-500 text-sm">Success Ratio</p>
-            <p className="text-2xl font-bold">0%</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4 text-center">
-            <p className="text-gray-500 text-sm">Pending Feedback</p>
-            <p className="text-2xl font-bold">0</p>
-          </CardContent>
-        </Card>
+        <KpiCard title="Selection Ratio" value={selectionRatio} />
+        <KpiCard title="Pending Interviews" value={pendingInterviews} />
+        <KpiCard title="Success Ratio" value={successRatio} />
+        <KpiCard title="Pending Feedback" value={pendingFeedback} />
       </div>
 
       {/* Charts Row */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {/* Open Position By Department */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Open Position By Department</CardTitle>
-          </CardHeader>
-          <CardContent className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={departmentData}
-                  dataKey="value"
-                  nameKey="name"
-                  cx="50%"
-                  cy="50%"
-                  outerRadius={80}
-                  label
-                >
-                  {departmentData.map((_, index) => (
-                    <Cell
-                      key={`cell-${index}`}
-                      fill={COLORS[index % COLORS.length]}
-                    />
-                  ))}
-                </Pie>
-                <Tooltip />
-              </PieChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
+        <ChartCard title="Open Positions by Department">
+          <ResponsiveContainer width="100%" height="100%">
+            <PieChart>
+              <Pie
+                data={departmentData}
+                dataKey="value"
+                nameKey="name"
+                cx="50%"
+                cy="50%"
+                outerRadius={80}
+                label
+              >
+                {departmentData.map((_, index) => (
+                  <Cell key={index} fill={COLORS[index % COLORS.length]} />
+                ))}
+              </Pie>
+              <Tooltip />
+            </PieChart>
+          </ResponsiveContainer>
+        </ChartCard>
 
-        {/* Offer Acceptance Ratio */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Offer Acceptance Ratio</CardTitle>
-          </CardHeader>
-          <CardContent className="flex flex-col items-center justify-center h-64">
-            <p className="text-4xl font-bold text-red-500">11%</p>
-            <p className="text-gray-500">Offer Acceptance Ratio</p>
-            <div className="flex justify-between w-full mt-4 text-sm text-gray-600">
-              <span>12 Accepted</span>
-              <span>123 Provided</span>
-            </div>
-          </CardContent>
-        </Card>
+        <ChartCard title="Requisitions by Client">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={requisitionChartData}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="name" />
+              <YAxis />
+              <Tooltip />
+              <Bar dataKey="value" fill="#1E40AF" />
+            </BarChart>
+          </ResponsiveContainer>
+        </ChartCard>
 
-        {/* Time To Hire */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Time To Hire</CardTitle>
-          </CardHeader>
-          <CardContent className="flex flex-col items-center justify-center h-64">
-            <div className="relative flex items-center justify-center">
-              <svg className="w-32 h-32">
-                <circle
-                  className="text-gray-200"
-                  strokeWidth="10"
-                  stroke="currentColor"
-                  fill="transparent"
-                  r="50"
-                  cx="64"
-                  cy="64"
-                />
-                <circle
-                  className="text-blue-600"
-                  strokeWidth="10"
-                  strokeLinecap="round"
-                  stroke="currentColor"
-                  fill="transparent"
-                  r="50"
-                  cx="64"
-                  cy="64"
-                  strokeDasharray={2 * Math.PI * 50}
-                  strokeDashoffset={(1 - 0.7) * 2 * Math.PI * 50}
-                />
-              </svg>
-              <span className="absolute text-xl font-bold text-blue-600">
-                37 Days
-              </span>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Bottom Row */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* Application Received By Source */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Application Received By Source</CardTitle>
-          </CardHeader>
-          <CardContent className="h-72">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={sourceData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" />
-                <YAxis />
-                <Tooltip />
-                <Bar dataKey="value" fill="#3B82F6" />
-              </BarChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-
-        {/* Recruitment Funnel Chart */}
-        <Card>
-  <CardHeader>
-    <CardTitle>Recruitment Funnel Chart</CardTitle>
-  </CardHeader>
-  <CardContent className="h-72">
-    <ResponsiveContainer width="100%" height="100%">
-      <BarChart 
-        data={funnelData} 
-        layout="vertical"
-        margin={{ top: 20, right: 20, left: 10, bottom: 20 }} // 👈 added margin
-      >
-        <CartesianGrid strokeDasharray="3 3" />
-        <XAxis type="number" />
-        <YAxis 
-          dataKey="stage" 
-          type="category" 
-          width={100} // 👈 optional extra space for labels
-        />
-        <Tooltip />
-        <Bar dataKey="value" fill="#1E40AF" />
-      </BarChart>
-    </ResponsiveContainer>
-  </CardContent>
-</Card>
-
+        <ChartCard title="Recruitment Funnel">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={funnelData} layout="vertical">
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis type="number" />
+              <YAxis dataKey="stage" type="category" width={100} />
+              <Tooltip />
+              <Bar dataKey="value" fill="#3B82F6" />
+            </BarChart>
+          </ResponsiveContainer>
+        </ChartCard>
       </div>
     </div>
   );
 }
 
+// --- Helper Components ---
+const KpiCard = ({ title, value }: { title: string; value: string | number }) => (
+  <Card>
+    <CardContent className="p-4 text-center">
+      <p className="text-gray-500 text-sm">{title}</p>
+      <p className="text-2xl font-bold">{value}</p>
+    </CardContent>
+  </Card>
+);
 
+const ChartCard = ({ title, children }: { title: string; children: React.ReactNode }) => (
+  <Card>
+    <CardHeader>
+      <CardTitle>{title}</CardTitle>
+    </CardHeader>
+    <CardContent className="h-64">{children}</CardContent>
+  </Card>
+);
