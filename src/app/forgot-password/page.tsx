@@ -15,7 +15,7 @@ export default function ForgotPasswordPage() {
 
     const supabase = createClient();
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `https://ats-hrms.vercel.app/reset-password`, // <-- where user sets new password
+      redirectTo: `https://ats-hrms.vercel.app/api/auth/callback`, // <-- where user sets new password
     });
 
     if (error) {
